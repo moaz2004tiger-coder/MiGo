@@ -32,7 +32,6 @@ def sanitize_filename(filename: str) -> str:
 def get_media_info(url: str):
     static_ffmpeg.add_paths()
     ydl_opts = {
-        'outtmpl': os.path.join(output_dir, '%(title).100s.%(ext)s'),
         'quiet': True,
         'no_warnings': True,
         'extract_flat': 'in_playlist',
@@ -141,7 +140,7 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
             }
 
     ydl_opts = {
-        'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
+        'outtmpl': os.path.join(output_dir, '%(title).100s.%(ext)s'),
         'logger': MyLogger(),
         'progress_hooks': [hook_wrapper],
         'quiet': False,

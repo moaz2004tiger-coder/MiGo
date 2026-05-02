@@ -1,4 +1,5 @@
 import yt_dlp
+import shutil
 import os
 import zipfile
 import threading

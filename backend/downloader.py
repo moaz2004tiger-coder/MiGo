@@ -5,6 +5,7 @@ import threading
 import shutil
 import re
 import platform
+import static_ffmpeg
 from concurrent.futures import ThreadPoolExecutor
 
 DOWNLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "temp_downloads"))
@@ -29,11 +30,14 @@ def sanitize_filename(filename: str) -> str:
     return re.sub(r'[^\w\-\.\s\u0600-\u06FF]', '_', filename).strip()
 
 def get_media_info(url: str):
+    static_ffmpeg.add_paths()
     ydl_opts = {
+        'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
         'quiet': True,
         'no_warnings': True,
         'extract_flat': 'in_playlist',
         'logger': MyLogger(),
+        'ffmpeg_location': shutil.which('ffmpeg')
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:

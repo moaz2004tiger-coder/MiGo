@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiGo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="lang-toggle-container">
+        <button id="lang-btn" class="neon-btn small">English</button>
+    </div>
+
+    <div class="container">
+        <h1 class="glow-text" id="title-text">محمل الوسائط المتقدم</h1>
+        <p class="subtitle" id="subtitle-text">حمل الفيديوهات، الصوتيات، والترجمات من جميع المنصات</p>
+
+        <div class="input-group">
+            <input type="text" id="url-input" placeholder="ضع رابط الفيديو أو قائمة التشغيل هنا واضغط Enter..." autocomplete="off">
+            <button id="fetch-btn" class="neon-btn"><span id="fetch-btn-text">جلب البيانات</span></button>
+        </div>
+
+        <div id="loading-spinner" class="hidden">
+            <div class="spinner"></div>
+            <p id="loading-text">جاري جلب البيانات...</p>
+        </div>
+
+        <div id="media-info" class="hidden card neon-border">
+            <div class="media-header">
+                <img id="media-thumb" src="" alt="Thumbnail" class="hidden">
+                <div class="media-details">
+                    <h3 id="media-title"></h3>
+                    <p id="media-type" class="badge"></p>
+                </div>
+            </div>
+
+            <div class="options-group">
+                <div class="select-wrapper">
+                    <label id="type-label">نوع التحميل</label>
+                    <select id="download-type">
+                        <option value="video" id="opt-video">فيديو (صوت وصورة)</option>
+                        <option value="audio" id="opt-audio">صوت فقط</option>
+                        <option value="subtitle" id="opt-subtitle">ترجمة</option>
+                    </select>
+                </div>
+
+                <div class="select-wrapper" id="quality-wrapper">
+                    <label id="quality-label">الجودة / اللغة</label>
+                    <select id="download-quality">
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+            </div>
+
+            <button id="download-btn" class="neon-btn primary">
+                <span id="download-btn-text">بدء التحميل</span>
+            </button>
+        </div>
+
+        <div id="progress-container" class="hidden card neon-border">
+            <h4 id="progress-title">حالة التحميل</h4>
+            <p id="progress-filename" class="filename"></p>
+            
+            <div class="progress-bar-bg">
+                <div id="progress-bar-fill" class="progress-bar-fill"></div>
+            </div>
+            
+            <div class="progress-stats">
+                <span id="stat-percent">0%</span>
+                <span id="stat-speed">0 KiB/s</span>
+                <span id="stat-eta">0s</span>
+            </div>
+        </div>
+        
+        <div id="error-message" class="hidden error-card"></div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

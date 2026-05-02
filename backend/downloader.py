@@ -157,10 +157,10 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
 
     if dl_type == 'video':
         if quality == 'best':
-            ydl_opts['format'] = 'bestvideo+bestaudio/best'
+            ydl_opts['format'] = 'bestvideo+bestaudio/best/bestvideo/bestaudio'
         else:
             height = quality.replace('p', '')
-            ydl_opts['format'] = f'bestvideo[height<={height}]+bestaudio/best[height<={height}]/best'
+            ydl_opts['format'] = f'bestvideo[height<={height}]+bestaudio/bestvideo+bestaudio/best[height<={height}]/best/bestvideo/bestaudio'
         ydl_opts['merge_output_format'] = 'mp4'
     
     elif dl_type == 'audio':

@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-yt-dlp
-sse-starlette
-pydantic
-static-ffmpeg

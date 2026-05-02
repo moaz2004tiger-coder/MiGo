@@ -30,14 +30,14 @@ def sanitize_filename(filename: str) -> str:
 
 def get_media_info(url: str):
     ydl_opts = {
-        'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': 'in_playlist',
         'logger': MyLogger(),
-        'progress_hooks': [hook_wrapper],
-        'quiet': False,
-        'windowsfilenames': True,
-        # أضف السطر التالي لإخبار المكتبة باستخدام ffmpeg المثبت في النظام
-        'ffmpeg_location': '/usr/bin/ffmpeg' 
+        # أضف السطر التالي فقط لحل مشكلة FFmpeg في جلب البيانات إذا لزم الأمر
+        'ffmpeg_location': shutil.which('ffmpeg') or '/usr/bin/ffmpeg'
     }
+    # بقية الكود كما هو...
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:

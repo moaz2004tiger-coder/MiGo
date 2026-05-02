@@ -29,10 +29,13 @@ def sanitize_filename(filename: str) -> str:
 
 def get_media_info(url: str):
     ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'extract_flat': 'in_playlist',
+        'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
         'logger': MyLogger(),
+        'progress_hooks': [hook_wrapper],
+        'quiet': False,
+        'windowsfilenames': True,
+        # أضف السطر التالي لإخبار المكتبة باستخدام ffmpeg المثبت في النظام
+        'ffmpeg_location': '/usr/bin/ffmpeg' 
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:

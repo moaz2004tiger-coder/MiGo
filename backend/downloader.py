@@ -36,7 +36,6 @@ def get_media_info(url: str):
         'no_warnings': True,
         'extract_flat': 'in_playlist',
         'logger': MyLogger(),
-        'outtmpl': os.path.join(output_dir, '%(title).100s.%(ext)s'),
         'ffmpeg_location': shutil.which('ffmpeg')
     }
     

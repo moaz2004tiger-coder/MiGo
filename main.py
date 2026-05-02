@@ -8,6 +8,7 @@ import os
 import asyncio
 import time
 import shutil
+import json
 from sse_starlette.sse import EventSourceResponse
 
 from backend.downloader import get_media_info, download_media_task, progress_store, DOWNLOADS_DIR
@@ -108,7 +109,7 @@ async def get_progress(request: Request, task_id: str):
                     "event": "message",
                     "id": task_id,
                     "retry": 15000,
-                    "data": data
+                    "data": json.dumps(data)
                 }
                 
             if data.get("status") in ["completed", "error"]:

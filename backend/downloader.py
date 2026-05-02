@@ -32,7 +32,6 @@ def sanitize_filename(filename: str) -> str:
 def get_media_info(url: str):
     static_ffmpeg.add_paths()
     ydl_opts = {
-        'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
         'quiet': True,
         'no_warnings': True,
         'extract_flat': 'in_playlist',

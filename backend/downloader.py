@@ -36,7 +36,8 @@ def get_media_info(url: str):
         'no_warnings': True,
         'extract_flat': 'in_playlist',
         'logger': MyLogger(),
-        'ffmpeg_location': shutil.which('ffmpeg')
+        'ffmpeg_location': shutil.which('ffmpeg'),
+        'cookiefile': 'cookies.txt'
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -141,6 +142,7 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
 
     ydl_opts = {
         'outtmpl': os.path.join(output_dir, '%(title).100s.%(ext)s'),
+        'cookiefile': 'cookies.txt',
         'logger': MyLogger(),
         'progress_hooks': [hook_wrapper],
         'quiet': False,

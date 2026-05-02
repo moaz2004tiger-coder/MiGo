@@ -4,6 +4,7 @@ import zipfile
 import threading
 import shutil
 import re
+import platform
 from concurrent.futures import ThreadPoolExecutor
 
 DOWNLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "temp_downloads"))
@@ -144,7 +145,9 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
     }
     
     local_ffmpeg = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    if os.path.exists(os.path.join(local_ffmpeg, "ffmpeg.exe")) or os.path.exists(os.path.join(local_ffmpeg, "ffmpeg")):
+    if platform.system() == "Windows" and os.path.exists(os.path.join(local_ffmpeg, "ffmpeg.exe")):
+        ydl_opts['ffmpeg_location'] = local_ffmpeg
+    elif platform.system() != "Windows" and os.path.exists(os.path.join(local_ffmpeg, "ffmpeg")) and os.path.isfile(os.path.join(local_ffmpeg, "ffmpeg")):
         ydl_opts['ffmpeg_location'] = local_ffmpeg
 
     if dl_type == 'video':

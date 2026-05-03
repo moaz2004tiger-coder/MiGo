@@ -6,6 +6,8 @@ import shutil
 import re
 import platform
 import static_ffmpeg
+import requests
+import random
 from concurrent.futures import ThreadPoolExecutor
 
 DOWNLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "temp_downloads"))
@@ -29,84 +31,109 @@ def sanitize_filename(filename: str) -> str:
     # Allow Arabic, English letters, numbers, spaces, dots, and dashes. Replace everything else with '_'
     return re.sub(r'[^\w\-\.\s\u0600-\u06FF]', '_', filename).strip()
 
+def get_random_proxy():
+    """يجلب بروكسي SOCKS5 عشوائي من المستودع لتخطي الحظر"""
+    try:
+        url = "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt"
+        response = requests.get(url, timeout=5)
+        proxies = response.text.strip().split('\n')
+        if proxies:
+            selected = random.choice(proxies).strip()
+            return f"socks5://{selected}"
+    except:
+        pass
+    return None
+
 def get_media_info(url: str):
     static_ffmpeg.add_paths()
-    ydl_opts = {
+    base_ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'extract_flat': 'in_playlist',
         'logger': MyLogger(),
         'ffmpeg_location': shutil.which('ffmpeg'),
-        'cookiefile': 'cookies.txt'
+        'cookiefile': 'cookies.txt',
+        # إضافة خدعة الأندرويد كخط دفاع أول قبل البروكسي
+        'extractor_args': {'youtube': ['player_client=android']}
     }
     
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            info = ydl.extract_info(url, download=False)
-            if 'entries' in info:
-                # Playlist
-                playlist_title = info.get('title', 'Playlist')
-                videos = []
-                for idx, entry in enumerate(info['entries']):
-                    videos.append({
-                        'title': entry.get('title', f'Video {idx+1}'),
-                        'url': entry.get('url'),
-                        'id': entry.get('id')
-                    })
-                return {
-                    'type': 'playlist',
-                    'title': playlist_title,
-                    'videos': videos,
-                    # For playlists we might not know exactly without fetching each, provide a generous list
-                    'qualities': ['144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p'],
-                    'audio_options': ['best'],
-                    'subtitles': []
-                }
-            else:
-                # Single video
-                title = info.get('title', 'Video')
-                thumbnail = info.get('thumbnail')
+    # محاولة جلب البيانات (مرتين كحد أقصى: الأولى طبيعية، والثانية بالبروكسي إذا فشلت)
+    for attempt in range(2):
+        current_opts = base_ydl_opts.copy()
+        if attempt == 1:
+            proxy = get_random_proxy()
+            if proxy:
+                current_opts['proxy'] = proxy
+
+        with yt_dlp.YoutubeDL(current_opts) as ydl:
+            try:
+                info = ydl.extract_info(url, download=False)
+                if 'entries' in info:
+                    # Playlist
+                    playlist_title = info.get('title', 'Playlist')
+                    videos = []
+                    for idx, entry in enumerate(info['entries']):
+                        videos.append({
+                            'title': entry.get('title', f'Video {idx+1}'),
+                            'url': entry.get('url'),
+                            'id': entry.get('id')
+                        })
+                    return {
+                        'type': 'playlist',
+                        'title': playlist_title,
+                        'videos': videos,
+                        'qualities': ['144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p'],
+                        'audio_options': ['best'],
+                        'subtitles': []
+                    }
+                else:
+                    # Single video
+                    title = info.get('title', 'Video')
+                    thumbnail = info.get('thumbnail')
+                    
+                    formats = info.get('formats', [])
+                    video_heights = set()
+                    audio_qualities = set()
+                    
+                    for f in formats:
+                        h = f.get('height')
+                        if f.get('vcodec') != 'none' and h:
+                            video_heights.add(int(h))
+                        if f.get('acodec') != 'none':
+                            audio_qualities.add("best")
+                    
+                    video_qualities = [f"{h}p" for h in sorted(list(video_heights))]
+                    if not video_qualities:
+                        video_qualities = ['best']
+                    
+                    subtitles = []
+                    sub_dict = info.get('subtitles', {})
+                    auto_sub_dict = info.get('automatic_captions', {})
+                    all_subs = set(list(sub_dict.keys()) + list(auto_sub_dict.keys()))
+                    subtitles = sorted(list(all_subs))
+                    
+                    return {
+                        'type': 'video',
+                        'title': title,
+                        'thumbnail': thumbnail,
+                        'qualities': video_qualities,
+                        'audio_options': ['best'],
+                        'subtitles': subtitles
+                    }
+            except Exception as e:
+                err_msg = str(e).lower()
+                # إذا كان الخطأ بسبب حظر يوتيوب ونحن في المحاولة الأولى، ننتقل للمحاولة الثانية بالبروكسي
+                if attempt == 0 and ("sign in" in err_msg or "bot" in err_msg or "429" in err_msg):
+                    continue
                 
-                formats = info.get('formats', [])
-                video_heights = set()
-                audio_qualities = set()
-                
-                for f in formats:
-                    h = f.get('height')
-                    if f.get('vcodec') != 'none' and h:
-                        video_heights.add(int(h))
-                    if f.get('acodec') != 'none':
-                        audio_qualities.add("best")
-                
-                # Dynamic qualities based on actual available resolutions
-                video_qualities = [f"{h}p" for h in sorted(list(video_heights))]
-                if not video_qualities:
-                    video_qualities = ['best']
-                
-                subtitles = []
-                sub_dict = info.get('subtitles', {})
-                auto_sub_dict = info.get('automatic_captions', {})
-                all_subs = set(list(sub_dict.keys()) + list(auto_sub_dict.keys()))
-                subtitles = sorted(list(all_subs))
-                
-                return {
-                    'type': 'video',
-                    'title': title,
-                    'thumbnail': thumbnail,
-                    'qualities': video_qualities,
-                    'audio_options': ['best'],
-                    'subtitles': subtitles
-                }
-        except Exception as e:
-            err_msg = str(e).lower()
-            friendly_err = "خطأ غير معروف في الرابط"
-            if "private video" in err_msg:
-                friendly_err = "هذا الفيديو خاص (Private)"
-            elif "unsupported url" in err_msg:
-                friendly_err = "الرابط غير مدعوم أو غير صحيح"
-            elif "sign in" in err_msg:
-                friendly_err = "هذا الفيديو يتطلب تسجيل دخول لعرضه"
-            return {"error": friendly_err}
+                friendly_err = "خطأ غير معروف في الرابط"
+                if "private video" in err_msg:
+                    friendly_err = "هذا الفيديو خاص (Private)"
+                elif "unsupported url" in err_msg:
+                    friendly_err = "الرابط غير مدعوم أو غير صحيح"
+                elif "sign in" in err_msg:
+                    friendly_err = "هذا الفيديو يتطلب تسجيل دخول لعرضه (تم حظر السيرفر والبروكسي)"
+                return {"error": friendly_err}
 
 def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang: str = None):
     output_dir = os.path.join(DOWNLOADS_DIR, task_id)
@@ -140,45 +167,46 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                 "filename": "Merging/Finalizing..."
             }
 
-    ydl_opts = {
+    base_ydl_opts = {
         'outtmpl': os.path.join(output_dir, '%(title).100s.%(ext)s'),
         'cookiefile': 'cookies.txt',
         'logger': MyLogger(),
         'progress_hooks': [hook_wrapper],
         'quiet': False,
-        'windowsfilenames': True
+        'windowsfilenames': True,
+        'extractor_args': {'youtube': ['player_client=android']}
     }
     
     local_ffmpeg = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     if platform.system() == "Windows" and os.path.exists(os.path.join(local_ffmpeg, "ffmpeg.exe")):
-        ydl_opts['ffmpeg_location'] = local_ffmpeg
+        base_ydl_opts['ffmpeg_location'] = local_ffmpeg
     elif platform.system() != "Windows" and os.path.exists(os.path.join(local_ffmpeg, "ffmpeg")) and os.path.isfile(os.path.join(local_ffmpeg, "ffmpeg")):
-        ydl_opts['ffmpeg_location'] = local_ffmpeg
+        base_ydl_opts['ffmpeg_location'] = local_ffmpeg
 
     if dl_type == 'video':
         if quality == 'best':
-            ydl_opts['format'] = 'bestvideo+bestaudio/best/bestvideo/bestaudio'
+            base_ydl_opts['format'] = 'bestvideo+bestaudio/best/bestvideo/bestaudio'
         else:
             height = quality.replace('p', '')
-            ydl_opts['format'] = f'bestvideo[height<={height}]+bestaudio/bestvideo+bestaudio/best[height<={height}]/best/bestvideo/bestaudio'
-        ydl_opts['merge_output_format'] = 'mp4'
+            base_ydl_opts['format'] = f'bestvideo[height<={height}]+bestaudio/bestvideo+bestaudio/best[height<={height}]/best/bestvideo/bestaudio'
+        base_ydl_opts['merge_output_format'] = 'mp4'
     
     elif dl_type == 'audio':
-        ydl_opts['format'] = 'bestaudio/best'
-        ydl_opts['postprocessors'] = [{
+        base_ydl_opts['format'] = 'bestaudio/best'
+        base_ydl_opts['postprocessors'] = [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }]
     
     elif dl_type == 'subtitle':
-        ydl_opts['skip_download'] = True
-        ydl_opts['writesubtitles'] = True
-        ydl_opts['writeautomaticsub'] = True
+        base_ydl_opts['skip_download'] = True
+        base_ydl_opts['writesubtitles'] = True
+        base_ydl_opts['writeautomaticsub'] = True
         if lang:
-            ydl_opts['subtitleslangs'] = [lang]
+            base_ydl_opts['subtitleslangs'] = [lang]
         else:
-            ydl_opts['subtitleslangs'] = ['en']
+            base_ydl_opts['subtitleslangs'] = ['en']
 
     is_playlist = False
     try:
@@ -186,14 +214,23 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
             info_check = ydl_check.extract_info(url, download=False)
             if info_check and 'entries' in info_check:
                 is_playlist = True
-                ydl_opts['outtmpl'] = os.path.join(output_dir, '%(playlist_index)s - %(title)s.%(ext)s')
+                base_ydl_opts['outtmpl'] = os.path.join(output_dir, '%(playlist_index)s - %(title)s.%(ext)s')
     except:
         pass
 
-    def run_download():
+    def run_download(retry_attempt=0):
         progress_store[task_id] = {"status": "starting", "percent": "0%", "speed": "", "eta": "", "filename": ""}
+        current_opts = base_ydl_opts.copy()
+        
+        # إذا فشلت المحاولة الأولى، نستخدم البروكسي في المحاولة الثانية
+        if retry_attempt > 0:
+            proxy = get_random_proxy()
+            if proxy:
+                current_opts['proxy'] = proxy
+                progress_store[task_id]["filename"] = "جاري محاولة تخطي الحظر عبر بروكسي..."
+
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with yt_dlp.YoutubeDL(current_opts) as ydl:
                 ydl.download([url])
                 
             files = os.listdir(output_dir)
@@ -208,14 +245,12 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                     for root, dirs, f in os.walk(output_dir):
                         for file in f:
                             file_path = os.path.join(root, file)
-                            # Sanitize file names inside zip
                             safe_name = sanitize_filename(file)
                             zipf.write(file_path, safe_name)
                 progress_store[task_id] = {"status": "completed", "file_path": zip_path, "filename": zip_filename}
             else:
                 original_file = files[0]
                 safe_file = sanitize_filename(original_file)
-                # Ensure unique final name
                 final_name = f"{task_id[:8]}_{safe_file}"
                 file_path = os.path.join(output_dir, original_file)
                 final_path = os.path.join(DOWNLOADS_DIR, final_name)
@@ -227,6 +262,12 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
             
         except Exception as e:
             err_msg = str(e).lower()
+            
+            # نظام إعادة المحاولة في حالة اكتشاف حظر (محاولتين كحد أقصى)
+            if retry_attempt < 2 and ("sign in" in err_msg or "bot" in err_msg or "429" in err_msg):
+                run_download(retry_attempt + 1)
+                return
+
             friendly_err = "حدث خطأ أثناء التحميل: " + str(e)
             if "private video" in err_msg:
                 friendly_err = "هذا الفيديو خاص (Private)"
@@ -239,5 +280,4 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
             except:
                 pass
 
-    # Submit task to the thread pool instead of creating unbounded threads
     executor.submit(run_download)

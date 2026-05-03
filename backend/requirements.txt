@@ -4,3 +4,4 @@ yt-dlp
 sse-starlette
 static-ffmpeg
 pydantic
+requests

@@ -5,3 +5,5 @@ sse-starlette
 static-ffmpeg
 pydantic
 requests
+psycopg2-binary
+sqlalchemy

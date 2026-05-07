@@ -9,12 +9,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="welcome-modal" class="modal-overlay hidden">
+        <div class="modal-content neon-border">
+            <button id="close-modal" class="close-btn">&times;</button>
+            <h2 class="glow-text" style="margin-bottom: 15px; font-size: 1.8em;">مرحباً بك في MiGo! 🚀</h2>
+            <p style="font-size: 1.1em; margin-bottom: 15px;">حمل الفيديوهات والصوتيات بأعلى جودة من أكثر من 1000 منصة، بما في ذلك:</p>
+            
+            <ul class="platforms-list">
+                <li>📱 فيسبوك</li>
+                <li>🎵 تيك توك</li>
+                <li>📸 إنستجرام</li>
+                <li>🐦 إكس (تويتر)</li>
+                <li>💼 لينكد إن</li>
+                <li>📺 ديلي موشن</li>
+            </ul>
+
+            <div class="alert-box">
+                <strong>⚠️ تنبيه هام (يوتيوب)</strong>
+                <p>نعتذر بشدة، خدمة التحميل من <b>يوتيوب</b> متوقفة مؤقتاً بسبب إجراء تحديثات قوية على الخوادم الخاصة بنا لتجاوز الحظر الجديد. نعدكم بعودتها في التحديث القادم قريباً جداً!</p>
+            </div>
+
+            <button id="understand-btn" class="neon-btn primary" style="width: 100%; margin-top: 10px;">حسناً، فهمت</button>
+        </div>
+    </div>
+
     <div class="lang-toggle-container">
         <button id="lang-btn" class="neon-btn small">English</button>
     </div>
 
     <div class="container">
-        <!-- Banner 728x90 (Top Ad) -->
         <div style="margin-bottom: 20px; text-align: center;">
             <script>
                 atOptions = {
@@ -63,8 +86,7 @@
                 <div class="select-wrapper" id="quality-wrapper">
                     <label id="quality-label">الجودة / اللغة</label>
                     <select id="download-quality">
-                        <!-- Options will be populated dynamically -->
-                    </select>
+                        </select>
                 </div>
             </div>
 
@@ -72,7 +94,6 @@
                 <span id="download-btn-text">بدء التحميل</span>
             </button>
 
-            <!-- Native Banner Code (الذي أضفناه سابقاً) -->
             <div style="margin-top: 20px; text-align: center;">
                 <script async="async" data-cfasync="false" src="https://pl29322321.profitablecpmratenetwork.com/155312ac3b2c37608cab7863581e40f1/invoke.js"></script>
                 <div id="container-155312ac3b2c37608cab7863581e40f1"></div>
@@ -96,7 +117,6 @@
         
         <div id="error-message" class="hidden error-card"></div>
 
-        <!-- Banner 320x50 (Bottom Ad - Mobile Friendly) -->
         <div style="margin-top: 20px; text-align: center;">
             <script>
                 atOptions = {
@@ -113,7 +133,6 @@
 
     <script src="/static/app.js"></script>
 
-    <!-- Social Bar Code -->
     <script src="https://pl29322322.profitablecpmratenetwork.com/07/f9/7b/07f97b5f5bfb23cc43876a4d9ccf82bd.js"></script>
 </body>
 </html>

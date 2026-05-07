@@ -12,7 +12,9 @@ import json
 from sse_starlette.sse import EventSourceResponse
 
 from backend.downloader import get_media_info, download_media_task, progress_store, DOWNLOADS_DIR
-
+from backend.database import init_db
+# استدعاء دالة الإنشاء فور تشغيل التطبيق
+init_db()
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")

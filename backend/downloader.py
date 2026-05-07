@@ -65,7 +65,6 @@ def get_media_info(url: str):
                     'type': 'playlist',
                     'title': playlist_title,
                     'videos': videos,
-                    # For playlists we might not know exactly without fetching each, provide a generous list
                     'qualities': ['144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p'],
                     'audio_options': ['best'],
                     'subtitles': []
@@ -86,7 +85,6 @@ def get_media_info(url: str):
                     if f.get('acodec') != 'none':
                         audio_qualities.add("best")
                 
-                # Dynamic qualities based on actual available resolutions
                 video_qualities = [f"{h}p" for h in sorted(list(video_heights))]
                 if not video_qualities:
                     video_qualities = ['best']
@@ -224,14 +222,12 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                     for root, dirs, f in os.walk(output_dir):
                         for file in f:
                             file_path = os.path.join(root, file)
-                            # Sanitize file names inside zip
                             safe_name = sanitize_filename(file)
                             zipf.write(file_path, safe_name)
                 progress_store[task_id] = {"status": "completed", "file_path": zip_path, "filename": zip_filename}
             else:
                 original_file = files[0]
                 safe_file = sanitize_filename(original_file)
-                # Ensure unique final name
                 final_name = f"{task_id[:8]}_{safe_file}"
                 file_path = os.path.join(output_dir, original_file)
                 final_path = os.path.join(DOWNLOADS_DIR, final_name)
@@ -255,5 +251,4 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
             except:
                 pass
 
-    # Submit task to the thread pool instead of creating unbounded threads
     executor.submit(run_download)

@@ -7,6 +7,7 @@ import re
 import platform
 import static_ffmpeg
 from concurrent.futures import ThreadPoolExecutor
+from database import log_download
 
 DOWNLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "temp_downloads"))
 
@@ -204,7 +205,7 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
     except:
         pass
 
-    def run_download():
+def run_download():
         progress_store[task_id] = {"status": "starting", "percent": "0%", "speed": "", "eta": "", "filename": ""}
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -212,7 +213,10 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                 
             files = os.listdir(output_dir)
             if not files:
-                progress_store[task_id] = {"status": "error", "error": "لم يتم تحميل أي ملفات. قد لا توجد ترجمات متاحة."}
+                error_msg = "لم يتم تحميل أي ملفات. قد لا توجد ترجمات متاحة."
+                progress_store[task_id] = {"status": "error", "error": error_msg}
+                # تسجيل الفشل في قاعدة البيانات
+                log_download("Railway_Server", task_id, url, "No Files", dl_type, quality, False, error_msg)
                 return
 
             if len(files) > 1 or is_playlist:
@@ -231,10 +235,12 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                 final_name = f"{task_id[:8]}_{safe_file}"
                 file_path = os.path.join(output_dir, original_file)
                 final_path = os.path.join(DOWNLOADS_DIR, final_name)
-                
                 os.rename(file_path, final_path)
                 progress_store[task_id] = {"status": "completed", "file_path": final_path, "filename": safe_file}
                 
+            # --- تسجيل النجاح في قاعدة البيانات ---
+            log_download("Railway_Server", task_id, url, "Success", dl_type, quality, True)
+            
             shutil.rmtree(output_dir, ignore_errors=True)
             
         except Exception as e:
@@ -244,6 +250,9 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                 friendly_err = "هذا الفيديو خاص (Private)"
             elif "ffmpeg is not installed" in err_msg:
                 friendly_err = "أداة دمج الفيديو (FFmpeg) غير موجودة"
+            
+            # --- تسجيل الفشل في قاعدة البيانات مع تفاصيل الخطأ ---
+            log_download("Railway_Server", task_id, url, "Failed", dl_type, quality, False, str(e))
             
             progress_store[task_id] = {"status": "error", "error": friendly_err}
             try:

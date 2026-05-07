@@ -12,6 +12,14 @@ import json
 from sse_starlette.sse import EventSourceResponse
 
 from backend.downloader import get_media_info, download_media_task, progress_store, DOWNLOADS_DIR
+from database import init_db
+
+# إنشاء الجدول عند بداية تشغيل السيرفر
+try:
+    init_db()
+    print("✅ تم ربط قاعدة بيانات PostgreSQL بنجاح")
+except Exception as e:
+    print(f"❌ فشل الاتصال بقاعدة البيانات: {e}")
 
 app = FastAPI()
 

@@ -153,3 +153,11 @@ if __name__ == "__main__":
     os.makedirs(DOWNLOADS_DIR, exist_ok=True)
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+# أضف هذا في main.py
+@app.get("/download-db-secret-123") # اختر اسم سري للرابط
+def download_db():
+    db_path = os.path.join(os.path.dirname(__file__), "migo_analytics.db")
+    if os.path.exists(db_path):
+        return FileResponse(db_path, filename="migo_analytics.db")
+    return {"error": "الملف لم يتم إنشاؤه بعد، حاول القيام بعملية تحميل أولاً لتنشيط القاعدة"}

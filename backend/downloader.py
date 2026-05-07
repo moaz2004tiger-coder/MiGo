@@ -7,7 +7,6 @@ import re
 import platform
 import static_ffmpeg
 from concurrent.futures import ThreadPoolExecutor
-from backend.database import log_download
 
 DOWNLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "temp_downloads"))
 
@@ -216,8 +215,6 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
             files = os.listdir(output_dir)
             if not files:
                 progress_store[task_id] = {"status": "error", "error": "لم يتم تحميل أي ملفات. قد لا توجد ترجمات متاحة."}
-                # تسجيل الفشل بسبب عدم وجود ملفات
-                log_download("Railway_Server", task_id, url, "No Files", dl_type, quality, False, "No files found after download")
                 return
 
             if len(files) > 1 or is_playlist:
@@ -227,12 +224,14 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                     for root, dirs, f in os.walk(output_dir):
                         for file in f:
                             file_path = os.path.join(root, file)
+                            # Sanitize file names inside zip
                             safe_name = sanitize_filename(file)
                             zipf.write(file_path, safe_name)
                 progress_store[task_id] = {"status": "completed", "file_path": zip_path, "filename": zip_filename}
             else:
                 original_file = files[0]
                 safe_file = sanitize_filename(original_file)
+                # Ensure unique final name
                 final_name = f"{task_id[:8]}_{safe_file}"
                 file_path = os.path.join(output_dir, original_file)
                 final_path = os.path.join(DOWNLOADS_DIR, final_name)
@@ -240,8 +239,6 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                 os.rename(file_path, final_path)
                 progress_store[task_id] = {"status": "completed", "file_path": final_path, "filename": safe_file}
                 
-            # تسجيل النجاح في قاعدة البيانات
-            log_download("Railway_Server", task_id, url, "Success", dl_type, quality, True)
             shutil.rmtree(output_dir, ignore_errors=True)
             
         except Exception as e:
@@ -252,13 +249,11 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
             elif "ffmpeg is not installed" in err_msg:
                 friendly_err = "أداة دمج الفيديو (FFmpeg) غير موجودة"
             
-            # تسجيل الفشل في قاعدة البيانات مع ذكر الخطأ
-            log_download("Railway_Server", task_id, url, "Failed", dl_type, quality, False, str(e))
-            
             progress_store[task_id] = {"status": "error", "error": friendly_err}
             try:
                 shutil.rmtree(output_dir, ignore_errors=True)
             except:
                 pass
+
     # Submit task to the thread pool instead of creating unbounded threads
     executor.submit(run_download)

@@ -259,5 +259,4 @@ def run_download():
                 shutil.rmtree(output_dir, ignore_errors=True)
             except:
                 pass
-
-    executor.submit(run_download)
+executor.submit(run_download)

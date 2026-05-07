@@ -205,7 +205,7 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
     except:
         pass
 
-def run_download():
+    def run_download():
         progress_store[task_id] = {"status": "starting", "percent": "0%", "speed": "", "eta": "", "filename": ""}
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -215,7 +215,7 @@ def run_download():
             if not files:
                 error_msg = "لم يتم تحميل أي ملفات. قد لا توجد ترجمات متاحة."
                 progress_store[task_id] = {"status": "error", "error": error_msg}
-                # تسجيل الفشل في قاعدة البيانات
+                # تسجيل الفشل في قاعدة البيانات (PostgreSQL)
                 log_download("Railway_Server", task_id, url, "No Files", dl_type, quality, False, error_msg)
                 return
 
@@ -238,9 +238,8 @@ def run_download():
                 os.rename(file_path, final_path)
                 progress_store[task_id] = {"status": "completed", "file_path": final_path, "filename": safe_file}
                 
-            # --- تسجيل النجاح في قاعدة البيانات ---
+            # تسجيل النجاح في قاعدة البيانات
             log_download("Railway_Server", task_id, url, "Success", dl_type, quality, True)
-            
             shutil.rmtree(output_dir, ignore_errors=True)
             
         except Exception as e:
@@ -251,7 +250,7 @@ def run_download():
             elif "ffmpeg is not installed" in err_msg:
                 friendly_err = "أداة دمج الفيديو (FFmpeg) غير موجودة"
             
-            # --- تسجيل الفشل في قاعدة البيانات مع تفاصيل الخطأ ---
+            # تسجيل الفشل في قاعدة البيانات
             log_download("Railway_Server", task_id, url, "Failed", dl_type, quality, False, str(e))
             
             progress_store[task_id] = {"status": "error", "error": friendly_err}
@@ -259,4 +258,5 @@ def run_download():
                 shutil.rmtree(output_dir, ignore_errors=True)
             except:
                 pass
-executor.submit(run_download)
+
+    executor.submit(run_download)

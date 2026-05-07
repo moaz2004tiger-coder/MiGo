@@ -51,6 +51,34 @@ const dict = {
     }
 };
 
+// --- إضافة كود النافذة الترحيبية ---
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('welcome-modal');
+    const closeBtn = document.getElementById('close-modal');
+    const understandBtn = document.getElementById('understand-btn');
+
+    if (modal && !sessionStorage.getItem('migo_welcome_shown')) {
+        modal.classList.remove('hidden');
+    }
+
+    const closeModal = () => {
+        if(modal) modal.classList.add('hidden');
+        sessionStorage.setItem('migo_welcome_shown', 'true');
+    };
+
+    if(closeBtn) closeBtn.addEventListener('click', closeModal);
+    if(understandBtn) understandBtn.addEventListener('click', closeModal);
+
+    if(modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+});
+// ---------------------------------
+
 let currentLang = 'ar';
 let currentInfo = null;
 let es = null;

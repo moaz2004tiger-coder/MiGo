@@ -3,21 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiGo - Media Downloader</title>
+    <title>MiGo</title>
     
-    <!-- ربط ملف الـ CSS -->
     <link rel="stylesheet" href="/static/style.css">
-    <!-- الروابط الخارجية للخطوط -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
     <!-- النافذة الترحيبية -->
     <div id="welcome-modal" class="modal-overlay hidden">
         <div class="modal-content neon-border">
             <button id="close-modal" class="close-btn">&times;</button>
-            <h2 class="glow-text" id="modal-title">مرحباً بك في MiGo! 🚀</h2>
-            <p id="modal-desc">حمل الفيديوهات والصوتيات بأعلى جودة من أكثر من 1000 منصة.</p>
+            <h2 class="glow-text" style="margin-bottom: 15px; font-size: 1.8em;">مرحباً بك في MiGo! 🚀</h2>
+            <p style="font-size: 1.1em; margin-bottom: 15px;">حمل الفيديوهات والصوتيات بأعلى جودة من أكثر من 1000 منصة، بما في ذلك:</p>
             
             <ul class="platforms-list">
                 <li>📱 فيسبوك</li>
@@ -30,29 +27,26 @@
 
             <div class="alert-box">
                 <strong>⚠️ تنبيه هام (يوتيوب)</strong>
-                <p>خدمة يوتيوب متوقفة مؤقتاً للتحديث. نعدكم بعودتها قريباً جداً!</p>
+                <p>نعتذر بشدة، خدمة التحميل من <b>يوتيوب</b> متوقفة مؤقتاً بسبب إجراء تحديثات قوية على الخوادم الخاصة بنا لتجاوز الحظر الجديد. نعدكم بعودتها في التحديث القادم قريباً جداً!</p>
             </div>
 
-            <button id="understand-btn" class="neon-btn primary">حسناً، فهمت</button>
+            <button id="understand-btn" class="neon-btn primary" style="width: 100%; margin-top: 10px;">حسناً، فهمت</button>
         </div>
     </div>
 
-    <!-- زر تغيير اللغة -->
     <div class="lang-toggle-container">
         <button id="lang-btn" class="neon-btn small">English</button>
     </div>
 
     <div class="container">
-        <header>
-            <h1 class="glow-text" id="title-text">محمل الوسائط المتقدم</h1>
-            <p class="subtitle" id="subtitle-text">حمل الفيديوهات، الصوتيات، والترجمات من جميع المنصات</p>
-        </header>
+        <!-- تم حذف بلوك الإعلان العلوي -->
+
+        <h1 class="glow-text" id="title-text">محمل الوسائط المتقدم</h1>
+        <p class="subtitle" id="subtitle-text">حمل الفيديوهات، الصوتيات، والترجمات من جميع المنصات</p>
 
         <div class="input-group">
-            <input type="text" id="url-input" placeholder="..." autocomplete="off">
-            <button id="fetch-btn" class="neon-btn">
-                <span id="fetch-btn-text">جلب البيانات</span>
-            </button>
+            <input type="text" id="url-input" placeholder="ضع رابط الفيديو أو قائمة التشغيل هنا واضغط Enter..." autocomplete="off">
+            <button id="fetch-btn" class="neon-btn"><span id="fetch-btn-text">جلب البيانات</span></button>
         </div>
 
         <div id="loading-spinner" class="hidden">
@@ -60,7 +54,6 @@
             <p id="loading-text">جاري جلب البيانات...</p>
         </div>
 
-        <!-- معلومات الميديا -->
         <div id="media-info" class="hidden card neon-border">
             <div class="media-header">
                 <img id="media-thumb" src="" alt="Thumbnail" class="hidden">
@@ -89,15 +82,18 @@
             <button id="download-btn" class="neon-btn primary">
                 <span id="download-btn-text">بدء التحميل</span>
             </button>
+
+            <!-- تم حذف بلوك الإعلان الأوسط -->
         </div>
 
-        <!-- شريط التقدم -->
         <div id="progress-container" class="hidden card neon-border">
             <h4 id="progress-title">حالة التحميل</h4>
             <p id="progress-filename" class="filename"></p>
+            
             <div class="progress-bar-bg">
                 <div id="progress-bar-fill" class="progress-bar-fill"></div>
             </div>
+            
             <div class="progress-stats">
                 <span id="stat-percent">0%</span>
                 <span id="stat-speed">0 KiB/s</span>
@@ -106,9 +102,11 @@
         </div>
         
         <div id="error-message" class="hidden error-card"></div>
+
+        <!-- تم حذف بلوك الإعلان السفلي -->
     </div>
 
-    <!-- ربط ملف الـ JS -->
     <script src="/static/app.js"></script>
+    <!-- تم حذف سكريبت النوافذ المنبثقة السفلي -->
 </body>
 </html>

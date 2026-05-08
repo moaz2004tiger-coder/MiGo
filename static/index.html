@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- النافذة الترحيبية -->
     <div id="welcome-modal" class="modal-overlay hidden">
         <div class="modal-content neon-border">
             <button id="close-modal" class="close-btn">&times;</button>
@@ -39,8 +38,6 @@
     </div>
 
     <div class="container">
-        <!-- تم حذف بلوك الإعلان العلوي -->
-
         <h1 class="glow-text" id="title-text">محمل الوسائط المتقدم</h1>
         <p class="subtitle" id="subtitle-text">حمل الفيديوهات، الصوتيات، والترجمات من جميع المنصات</p>
 
@@ -75,15 +72,14 @@
 
                 <div class="select-wrapper" id="quality-wrapper">
                     <label id="quality-label">الجودة / اللغة</label>
-                    <select id="download-quality"></select>
+                    <select id="download-quality">
+                        </select>
                 </div>
             </div>
 
             <button id="download-btn" class="neon-btn primary">
                 <span id="download-btn-text">بدء التحميل</span>
             </button>
-
-            <!-- تم حذف بلوك الإعلان الأوسط -->
         </div>
 
         <div id="progress-container" class="hidden card neon-border">
@@ -102,11 +98,9 @@
         </div>
         
         <div id="error-message" class="hidden error-card"></div>
-
-        <!-- تم حذف بلوك الإعلان السفلي -->
     </div>
 
     <script src="/static/app.js"></script>
-    <!-- تم حذف سكريبت النوافذ المنبثقة السفلي -->
+
 </body>
 </html>

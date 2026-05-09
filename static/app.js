@@ -101,8 +101,7 @@ const progressContainer = document.getElementById('progress-container');
 async function getYouTubeTokens(url) {
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
         try {
-            // محاكاة استدعاء الوظيفة التي تستخرج التوكنات عبر المتصفح
-            // ملاحظة: تعتمد هذه الدالة على وجود مكتبة توليد التوكنات في الـ HTML الخاص بك
+            // تفعيل "المصافحة الرقمية" في المتصفح لجلب توكنات الهوية
             if (window.YouTubeIdentityGenerator) {
                 return await window.YouTubeIdentityGenerator.generate();
             }
@@ -167,7 +166,7 @@ async function fetchInfo() {
     loadingSpinner.classList.remove('hidden');
     
     try {
-        // جلب التوكنات قبل إرسال طلب المعلومات لضمان فك الحظر
+        // جلب التوكنات (CSIR) لترحيل الهوية قبل طلب المعلومات
         const tokens = await getYouTubeTokens(url);
 
         const res = await fetch('/api/info', {
@@ -281,7 +280,7 @@ dlBtn.addEventListener('click', async () => {
     document.getElementById('download-btn-text').innerText = dict[currentLang].preparing;
     
     try {
-        // جلب التوكنات مجدداً لضمان صلاحيتها وقت التحميل الفعلي
+        // تجديد التوكنات قبل البدء الفعلي لعملية التحميل لضمان الصلاحية
         const tokens = await getYouTubeTokens(url);
 
         const res = await fetch('/api/download', {

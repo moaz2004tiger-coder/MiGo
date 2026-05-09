@@ -9,27 +9,16 @@ import asyncio
 import time
 import shutil
 import json
-import static_ffmpeg # استيراد المكتبة للتهيئة المبكرة
 from sse_starlette.sse import EventSourceResponse
 
 from backend.downloader import get_media_info, download_media_task, progress_store, DOWNLOADS_DIR
 from database import init_db
 
-# --- منطقة تهيئة السيرفر عند البدء (Startup Logic) ---
-# 1. تهيئة قاعدة البيانات
 try:
     init_db()
     print("✅ تم ربط قاعدة بيانات PostgreSQL بنجاح")
 except Exception as e:
     print(f"❌ فشل الاتصال بقاعدة البيانات: {e}")
-
-# 2. تهيئة FFmpeg مسبقاً لمنع التأخير أثناء الطلبات (حل مشكلة 400 Bad Request)
-try:
-    static_ffmpeg.add_paths()
-    print("✅ تم تجهيز مسارات FFmpeg بنجاح")
-except Exception as e:
-    print(f"❌ فشل تجهيز FFmpeg: {e}")
-# --------------------------------------------------
 
 app = FastAPI()
 
@@ -37,18 +26,13 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class URLRequest(BaseModel):
     url: str
-    # استقبال التوكنات من المتصفح (Client-Side Identity Relay)
-    po_token: Optional[str] = None
-    visitor_data: Optional[str] = None
 
 class DownloadRequest(BaseModel):
     url: str
-    type: str 
+    type: str
     quality: Optional[str] = None
     lang: Optional[str] = None
-    # استقبال التوكنات من المتصفح (Client-Side Identity Relay)
-    po_token: Optional[str] = None
-    visitor_data: Optional[str] = None
+    cookies: Optional[str] = None  # Raw cookie string from browser (e.g. "key=val; key2=val2")
 
 @app.get("/")
 def read_root():
@@ -59,8 +43,8 @@ def cleanup_old_files():
         now = time.time()
         total, used, free = shutil.disk_usage(DOWNLOADS_DIR)
         free_gb = free / (2**30)
-        critical_space = free_gb < 0.3  
-        
+        critical_space = free_gb < 0.3
+
         for root, dirs, files in os.walk(DOWNLOADS_DIR, topdown=False):
             for name in files:
                 fpath = os.path.join(root, name)
@@ -70,7 +54,6 @@ def cleanup_old_files():
                         os.remove(fpath)
                     except:
                         pass
-            
             for name in dirs:
                 dpath = os.path.join(root, name)
                 try:
@@ -83,8 +66,7 @@ def cleanup_old_files():
 
 @app.post("/api/info")
 def get_info(req: URLRequest):
-    # تمرير التوكنات المقتبسة من IP المستخدم لفك حظر يوتيوب في مرحلة جلب البيانات
-    info = get_media_info(req.url, po_token=req.po_token, visitor_data=req.visitor_data)
+    info = get_media_info(req.url)
     if "error" in info:
         raise HTTPException(status_code=400, detail=info["error"])
     return info
@@ -93,16 +75,7 @@ def get_info(req: URLRequest):
 def start_download(req: DownloadRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(cleanup_old_files)
     task_id = str(uuid.uuid4())
-    # تمرير الهوية المعتمدة (CSIR) لفك حظر يوتيوب في مرحلة التحميل الفعلي
-    download_media_task(
-        task_id, 
-        req.url, 
-        req.type, 
-        req.quality, 
-        req.lang, 
-        po_token=req.po_token, 
-        visitor_data=req.visitor_data
-    )
+    download_media_task(task_id, req.url, req.type, req.quality, req.lang, req.cookies)
     return {"task_id": task_id}
 
 @app.get("/api/progress/{task_id}")
@@ -136,13 +109,13 @@ def download_file(task_id: str):
     data = progress_store.get(task_id)
     if not data or data.get("status") != "completed":
         raise HTTPException(status_code=404, detail="File not ready or task not found")
-        
+
     file_path = data.get("file_path")
     filename = data.get("filename")
-    
+
     if not file_path or not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on server")
-        
+
     del progress_store[task_id]
     return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')
 

@@ -27,11 +27,32 @@ class MyLogger(object):
         print("ERROR:", msg)
 
 def sanitize_filename(filename: str) -> str:
-    # Allow Arabic, English letters, numbers, spaces, dots, and dashes.
     return re.sub(r'[^\w\-\.\s\u0600-\u06FF]', '_', filename).strip()
 
-# --- تعديل دالة جلب المعلومات لحقن توكنات الهوية ---
-def get_media_info(url: str, po_token: str = None, visitor_data: str = None):
+def build_temp_cookie_file(cookies_str: str, task_id: str, output_dir: str) -> str:
+    """
+    Convert a raw browser cookie string (e.g. "key=val; key2=val2")
+    into a Netscape-format cookie file that yt-dlp can consume.
+    Returns the path to the written file.
+    """
+    cookie_path = os.path.join(output_dir, f"yt_cookies_{task_id[:8]}.txt")
+    with open(cookie_path, 'w', encoding='utf-8') as f:
+        f.write("# Netscape HTTP Cookie File\n")
+        f.write("# This file was generated automatically by MiGo.\n\n")
+        for item in cookies_str.split(';'):
+            item = item.strip()
+            if '=' not in item:
+                continue
+            name, _, value = item.partition('=')
+            name = name.strip()
+            value = value.strip()
+            if not name:
+                continue
+            # domain, include_subdomains, path, secure, expiry, name, value
+            f.write(f".youtube.com\tTRUE\t/\tTRUE\t2099999999\t{name}\t{value}\n")
+    return cookie_path
+
+def get_media_info(url: str):
     static_ffmpeg.add_paths()
     ydl_opts = {
         'quiet': True,
@@ -45,19 +66,15 @@ def get_media_info(url: str, po_token: str = None, visitor_data: str = None):
         'extractor_args': {
             'youtube': {
                 'player_client': ['android', 'web_safari'],
-                'formats': 'duplicate,missing_pot',
-                # حقن التوكنات المقتبسة من IP المستخدم (CSIR)
-                'po_token': [po_token] if po_token else [],
-                'visitor_data': [visitor_data] if visitor_data else []
+                'formats': 'duplicate,missing_pot'
             }
         }
     }
-    
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(url, download=False)
             if 'entries' in info:
-                # Playlist logic
                 playlist_title = info.get('title', 'Playlist')
                 videos = []
                 for idx, entry in enumerate(info['entries']):
@@ -75,59 +92,97 @@ def get_media_info(url: str, po_token: str = None, visitor_data: str = None):
                     'subtitles': []
                 }
             else:
-                # Single video logic
                 title = info.get('title', 'Video')
                 thumbnail = info.get('thumbnail')
+
                 formats = info.get('formats', [])
                 video_heights = set()
+
                 for f in formats:
                     h = f.get('height')
                     if f.get('vcodec') != 'none' and h:
                         video_heights.add(int(h))
-                
+
                 video_qualities = [f"{h}p" for h in sorted(list(video_heights))]
-                if not video_qualities: video_qualities = ['best']
-                
+                if not video_qualities:
+                    video_qualities = ['best']
+
                 sub_dict = info.get('subtitles', {})
                 auto_sub_dict = info.get('automatic_captions', {})
                 all_subs = set(list(sub_dict.keys()) + list(auto_sub_dict.keys()))
-                
+                subtitles = sorted(list(all_subs))
+
                 return {
                     'type': 'video',
                     'title': title,
                     'thumbnail': thumbnail,
                     'qualities': video_qualities,
                     'audio_options': ['best'],
-                    'subtitles': sorted(list(all_subs))
+                    'subtitles': subtitles
                 }
         except Exception as e:
             err_msg = str(e).lower()
-            friendly_err = "خطأ في الاتصال بيوتيوب (نرجو التحقق من التوكنات)"
-            if "private video" in err_msg: friendly_err = "هذا الفيديو خاص"
-            elif "unsupported url" in err_msg: friendly_err = "الرابط غير مدعوم"
+            friendly_err = "خطأ غير معروف في الرابط"
+            if "private video" in err_msg:
+                friendly_err = "هذا الفيديو خاص (Private)"
+            elif "unsupported url" in err_msg:
+                friendly_err = "الرابط غير مدعوم أو غير صحيح"
+            elif "sign in" in err_msg:
+                friendly_err = "هذا الفيديو يتطلب تسجيل دخول — استخدم زر 'مشاركة جلسة يوتيوب' أدناه"
             return {"error": friendly_err}
 
-# --- تعديل دالة التحميل لتفعيل "الجلسة الممتدة" ---
-def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang: str = None, po_token: str = None, visitor_data: str = None):
+
+def download_media_task(task_id: str, url: str, dl_type: str,
+                        quality: str, lang: str = None, cookies: str = None):
     output_dir = os.path.join(DOWNLOADS_DIR, task_id)
     os.makedirs(output_dir, exist_ok=True)
-    
+
     def hook_wrapper(d):
         if d['status'] == 'downloading':
-            percent_str = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', d.get('_percent_str', '0.0%')).strip()
+            percent_str = d.get('_percent_str', '0.0%').strip()
+            speed_str   = d.get('_speed_str',   '0KiB/s').strip()
+            eta_str     = d.get('_eta_str',     'Unknown').strip()
+            filename    = os.path.basename(d.get('filename', ''))
+
+            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            percent_str = ansi_escape.sub('', percent_str)
+            speed_str   = ansi_escape.sub('', speed_str)
+            eta_str     = ansi_escape.sub('', eta_str)
+
             progress_store[task_id] = {
                 "status": "downloading",
                 "percent": percent_str,
-                "speed": d.get('_speed_str', '0KiB/s').strip(),
-                "eta": d.get('_eta_str', 'Unknown').strip(),
-                "filename": os.path.basename(d.get('filename', ''))
+                "speed": speed_str,
+                "eta": eta_str,
+                "filename": filename
             }
         elif d['status'] == 'finished':
-            progress_store[task_id] = {"status": "processing", "percent": "100%", "filename": "Merging/Finalizing..."}
+            progress_store[task_id] = {
+                "status": "processing",
+                "percent": "100%",
+                "speed": "0KiB/s",
+                "eta": "0s",
+                "filename": "Merging/Finalizing..."
+            }
+
+    # ----------------------------------------------------------------
+    # Determine which cookie file to use
+    # ----------------------------------------------------------------
+    cookie_file = 'cookies.txt'        # server-side fallback
+    temp_cookie_path = None
+
+    if cookies and cookies.strip():
+        try:
+            temp_cookie_path = build_temp_cookie_file(cookies, task_id, output_dir)
+            cookie_file = temp_cookie_path
+            print(f"[MiGo] Using user-supplied cookies for task {task_id[:8]}")
+        except Exception as ce:
+            print(f"[MiGo] Failed to write temp cookie file: {ce}")
+    # ----------------------------------------------------------------
 
     ydl_opts = {
         'outtmpl': os.path.join(output_dir, '%(title).100s.%(ext)s'),
-        'cookiefile': 'cookies.txt',
+        'cookiefile': cookie_file,
         'logger': MyLogger(),
         'progress_hooks': [hook_wrapper],
         'quiet': False,
@@ -137,56 +192,73 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
         'extractor_args': {
             'youtube': {
                 'player_client': ['android', 'web_safari'],
-                'formats': 'duplicate,missing_pot',
-                # حقن معاملات الهوية الممررة من المتصفح لفك الحظر
-                'po_token': [po_token] if po_token else [],
-                'visitor_data': [visitor_data] if visitor_data else []
+                'formats': 'duplicate,missing_pot'
             }
         }
     }
-    
-    # ضبط FFmpeg
+
     local_ffmpeg = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     if platform.system() == "Windows" and os.path.exists(os.path.join(local_ffmpeg, "ffmpeg.exe")):
         ydl_opts['ffmpeg_location'] = local_ffmpeg
-    elif platform.system() != "Windows" and os.path.exists(os.path.join(local_ffmpeg, "ffmpeg")):
+    elif (platform.system() != "Windows"
+          and os.path.exists(os.path.join(local_ffmpeg, "ffmpeg"))
+          and os.path.isfile(os.path.join(local_ffmpeg, "ffmpeg"))):
         ydl_opts['ffmpeg_location'] = local_ffmpeg
 
-    # ضبط التنسيق والجودة
     if dl_type == 'video':
-        height = quality.replace('p', '') if quality != 'best' else '1080'
-        ydl_opts['format'] = f'bestvideo[height<={height}]+bestaudio/best[height<={height}]/best'
+        if quality == 'best':
+            ydl_opts['format'] = 'bestvideo+bestaudio/best/bestvideo/bestaudio'
+        else:
+            height = quality.replace('p', '')
+            ydl_opts['format'] = (
+                f'bestvideo[height<={height}]+bestaudio'
+                f'/bestvideo+bestaudio/best[height<={height}]/best/bestvideo/bestaudio'
+            )
         ydl_opts['merge_output_format'] = 'mp4'
+
     elif dl_type == 'audio':
         ydl_opts['format'] = 'bestaudio/best'
-        ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}]
+        ydl_opts['postprocessors'] = [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }]
+
     elif dl_type == 'subtitle':
-        ydl_opts.update({'skip_download': True, 'writesubtitles': True, 'writeautomaticsub': True, 'subtitleslangs': [lang] if lang else ['en']})
+        ydl_opts['skip_download'] = True
+        ydl_opts['writesubtitles'] = True
+        ydl_opts['writeautomaticsub'] = True
+        ydl_opts['subtitleslangs'] = [lang] if lang else ['en']
 
     is_playlist = False
     try:
-        # ملاحظة: حقن التوكنات هنا أيضاً لضمان فحص قائمة التشغيل بنجاح
-        with yt_dlp.YoutubeDL({'quiet': True, 'extract_flat': 'in_playlist', 'extractor_args': ydl_opts['extractor_args']}) as ydl_check:
+        with yt_dlp.YoutubeDL({'quiet': True, 'extract_flat': 'in_playlist'}) as ydl_check:
             info_check = ydl_check.extract_info(url, download=False)
             if info_check and 'entries' in info_check:
                 is_playlist = True
-                ydl_opts['outtmpl'] = os.path.join(output_dir, '%(playlist_index)s - %(title)s.%(ext)s')
+                ydl_opts['outtmpl'] = os.path.join(
+                    output_dir, '%(playlist_index)s - %(title)s.%(ext)s'
+                )
     except:
         pass
 
     def run_download():
-        progress_store[task_id] = {"status": "starting", "percent": "0%", "speed": "", "eta": "", "filename": ""}
-        video_title = "Unknown Title"
+        progress_store[task_id] = {
+            "status": "starting", "percent": "0%",
+            "speed": "", "eta": "", "filename": ""
+        }
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info_data = ydl.extract_info(url, download=False)
-                video_title = info_data.get('title', 'Unknown Title')
                 ydl.download([url])
-                
+
             files = os.listdir(output_dir)
+            # Remove the temp cookie file from the file listing so it isn't zipped
+            files = [f for f in files if not f.startswith('yt_cookies_')]
+
             if not files:
-                progress_store[task_id] = {"status": "error", "error": "لم يتم تحميل أي ملفات."}
-                log_download("Railway_Server", task_id, url, video_title, dl_type, quality, False, "No files downloaded")
+                error_msg = "لم يتم تحميل أي ملفات. قد لا توجد ترجمات متاحة."
+                progress_store[task_id] = {"status": "error", "error": error_msg}
+                log_download("Railway_Server", task_id, url, "No Files", dl_type, quality, False, error_msg)
                 return
 
             if len(files) > 1 or is_playlist:
@@ -195,21 +267,47 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                 with zipfile.ZipFile(zip_path, 'w') as zipf:
                     for root, dirs, f in os.walk(output_dir):
                         for file in f:
-                            zipf.write(os.path.join(root, file), sanitize_filename(file))
-                progress_store[task_id] = {"status": "completed", "file_path": zip_path, "filename": zip_filename}
+                            if file.startswith('yt_cookies_'):
+                                continue
+                            file_path = os.path.join(root, file)
+                            safe_name = sanitize_filename(file)
+                            zipf.write(file_path, safe_name)
+                progress_store[task_id] = {
+                    "status": "completed",
+                    "file_path": zip_path,
+                    "filename": zip_filename
+                }
             else:
                 original_file = files[0]
-                final_name = f"{task_id[:8]}_{sanitize_filename(original_file)}"
+                safe_file = sanitize_filename(original_file)
+                final_name = f"{task_id[:8]}_{safe_file}"
+                file_path = os.path.join(output_dir, original_file)
                 final_path = os.path.join(DOWNLOADS_DIR, final_name)
-                os.rename(os.path.join(output_dir, original_file), final_path)
-                progress_store[task_id] = {"status": "completed", "file_path": final_path, "filename": original_file}
-                
-            log_download("Railway_Server", task_id, url, video_title, dl_type, quality, True)
+                os.rename(file_path, final_path)
+                progress_store[task_id] = {
+                    "status": "completed",
+                    "file_path": final_path,
+                    "filename": safe_file
+                }
+
+            log_download("Railway_Server", task_id, url, "Success", dl_type, quality, True)
             shutil.rmtree(output_dir, ignore_errors=True)
-            
+
         except Exception as e:
-            log_download("Railway_Server", task_id, url, video_title, dl_type, quality, False, str(e))
-            progress_store[task_id] = {"status": "error", "error": str(e)}
-            shutil.rmtree(output_dir, ignore_errors=True)
+            err_msg = str(e).lower()
+            friendly_err = "حدث خطأ أثناء التحميل: " + str(e)
+            if "private video" in err_msg:
+                friendly_err = "هذا الفيديو خاص (Private)"
+            elif "ffmpeg is not installed" in err_msg:
+                friendly_err = "أداة دمج الفيديو (FFmpeg) غير موجودة"
+            elif "sign in" in err_msg or "login" in err_msg:
+                friendly_err = "يوتيوب يطلب تسجيل الدخول — الرجاء استخدام زر 'مشاركة جلسة يوتيوب' وإعادة المحاولة"
+
+            log_download("Railway_Server", task_id, url, "Failed", dl_type, quality, False, str(e))
+            progress_store[task_id] = {"status": "error", "error": friendly_err}
+            try:
+                shutil.rmtree(output_dir, ignore_errors=True)
+            except:
+                pass
 
     executor.submit(run_download)

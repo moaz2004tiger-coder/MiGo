@@ -21,26 +21,27 @@ const dict = {
         notAvailable: "غير متاح",
         completed: "اكتمل التجهيز! جاري بدء التنزيل...",
         dlError: "خطأ في التحميل: ",
-        disconnect: "انقطع الاتصال بالخادم أثناء التحميل",
+        disconnect: "انقطع الاتصال بالخادم نهائياً أثناء التحميل",
         preparing: "جاري تجهيز الملف...",
-        // ── YouTube session panel ──
-        ytTitle: "يوتيوب يحتاج جلستك",
-        ytDesc: "خوادم Railway محجوبة من يوتيوب. الحل: انسخ كوكيز جلستك من متصفحك وألصقها أدناه. لا كلمة مرور — فقط رمز الجلسة.",
-        ytCookieLabel: "الصق كوكيز يوتيوب هنا:",
-        ytPlaceholder: "SAPISID=Abc123...; __Secure-3PAPISID=Xyz...; SID=...; SSID=...; HSID=...",
-        ytSavedOk: "✅ تم الحفظ",
-        ytSaveBtn: "حفظ",
-        ytHowToggle: "كيف أحصل على الكوكيز؟ (خطوات بالتفصيل)",
-        ytSteps: [
-            "افتح <strong>youtube.com</strong> في متصفحك وتأكد من تسجيل الدخول.",
-            "اضغط <kbd>F12</kbd> لفتح أدوات المطوّر (DevTools).",
-            "اذهب إلى تبويب <strong>Application</strong> (أو Storage في Firefox).",
-            "من القائمة الجانبية اختر <strong>Cookies ← https://www.youtube.com</strong>.",
-            "ابحث عن هذه الأسماء وانسخ <em>Name</em> و <em>Value</em> لكل منها:",
-            "<code>SAPISID &nbsp; __Secure-1PAPISID &nbsp; __Secure-3PAPISID<br>SID &nbsp; SSID &nbsp; HSID &nbsp; APISID &nbsp; LOGIN_INFO</code>",
-            "الصقها بهذه الصيغة: <code>NAME=VALUE; NAME2=VALUE2</code>",
-        ],
-        ytWarning: "⚠️ هذه المعلومات تُستخدم فقط لتحميل الفيديو المطلوب ولا تُخزَّن على الخادم."
+        // YouTube cookie UI
+        ytBannerTitle: "يوتيوب يحتاج جلستك",
+        ytBannerBody: "الخادم محجوب من يوتيوب. لكن يمكنك تجاوز ذلك بمشاركة جلستك من متصفحك مباشرةً — آمن تماماً ولا يُرسَل أي كلمة مرور.",
+        ytStep1: "افتح يوتيوب في هذا المتصفح وتأكد أنك مسجّل الدخول.",
+        ytStep2: "اضغط الزر أدناه لاستخراج بيانات الجلسة تلقائياً.",
+        ytExtractBtn: "استخراج بيانات الجلسة",
+        ytExtractDone: "✅ تم الاستخراج — يمكنك الآن التحميل",
+        ytExtractFail: "تعذّر الاستخراج التلقائي. الرجاء نسخ الكوكيز يدوياً.",
+        ytManualLabel: "أو الصق كوكيز يوتيوب يدوياً:",
+        ytManualPlaceholder: "VISITOR_INFO1_LIVE=xxx; YSC=yyy; SAPISID=zzz ...",
+        ytManualSaved: "✅ تم الحفظ",
+        ytHowTitle: "كيف أحصل على الكوكيز يدوياً؟",
+        ytHowSteps: [
+            "افتح youtube.com في متصفحك وتأكد من تسجيل الدخول.",
+            "اضغط F12 لفتح أدوات المطور.",
+            "اذهب إلى Application → Cookies → https://www.youtube.com",
+            "انسخ القيم الكاملة لـ: SAPISID, __Secure-3PAPISID, SID, SSID, HSID",
+            "الصقها بالصيغة: NAME=VALUE; NAME2=VALUE2"
+        ]
     },
     en: {
         title: "MiGo",
@@ -66,57 +67,59 @@ const dict = {
         dlError: "Download error: ",
         disconnect: "Lost connection to server during download",
         preparing: "Preparing file...",
-        // ── YouTube session panel ──
-        ytTitle: "YouTube session required",
-        ytDesc: "Railway servers are blocked by YouTube. Fix: copy your session cookies from this browser and paste them below. No password is ever sent — just your session token.",
-        ytCookieLabel: "Paste your YouTube cookies here:",
-        ytPlaceholder: "SAPISID=Abc123...; __Secure-3PAPISID=Xyz...; SID=...; SSID=...; HSID=...",
-        ytSavedOk: "✅ Saved",
-        ytSaveBtn: "Save",
-        ytHowToggle: "How do I get the cookies? (step-by-step)",
-        ytSteps: [
-            "Open <strong>youtube.com</strong> and make sure you are logged in.",
-            "Press <kbd>F12</kbd> to open DevTools.",
-            "Go to the <strong>Application</strong> tab (Storage in Firefox).",
-            "In the sidebar select <strong>Cookies → https://www.youtube.com</strong>.",
-            "Find these cookie names and copy the <em>Name</em> and <em>Value</em> of each:",
-            "<code>SAPISID &nbsp; __Secure-1PAPISID &nbsp; __Secure-3PAPISID<br>SID &nbsp; SSID &nbsp; HSID &nbsp; APISID &nbsp; LOGIN_INFO</code>",
-            "Paste them as: <code>NAME=VALUE; NAME2=VALUE2</code>",
-        ],
-        ytWarning: "⚠️ These are used only for this download and are never stored on the server."
+        // YouTube cookie UI
+        ytBannerTitle: "YouTube session required",
+        ytBannerBody: "The server is blocked by YouTube. You can bypass this by sharing your session from this browser — no password is ever sent.",
+        ytStep1: "Make sure you are logged into YouTube in this browser.",
+        ytStep2: "Click the button below to extract your session automatically.",
+        ytExtractBtn: "Extract session data",
+        ytExtractDone: "✅ Extracted — you can now start the download",
+        ytExtractFail: "Auto-extraction failed. Please paste cookies manually.",
+        ytManualLabel: "Or paste your YouTube cookies manually:",
+        ytManualPlaceholder: "VISITOR_INFO1_LIVE=xxx; YSC=yyy; SAPISID=zzz ...",
+        ytManualSaved: "✅ Saved",
+        ytHowTitle: "How to get cookies manually?",
+        ytHowSteps: [
+            "Open youtube.com and make sure you are logged in.",
+            "Press F12 to open DevTools.",
+            "Go to Application → Cookies → https://www.youtube.com",
+            "Copy the full values for: SAPISID, __Secure-3PAPISID, SID, SSID, HSID",
+            "Paste them as: NAME=VALUE; NAME2=VALUE2"
+        ]
     }
 };
 
 // ─── Welcome modal ────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    const modal         = document.getElementById('welcome-modal');
-    const closeBtn      = document.getElementById('close-modal');
+    const modal      = document.getElementById('welcome-modal');
+    const closeBtn   = document.getElementById('close-modal');
     const understandBtn = document.getElementById('understand-btn');
 
-    if (modal && !sessionStorage.getItem('migo_welcome_shown'))
+    if (modal && !sessionStorage.getItem('migo_welcome_shown')) {
         modal.classList.remove('hidden');
+    }
 
     const closeModal = () => {
         if (modal) modal.classList.add('hidden');
         sessionStorage.setItem('migo_welcome_shown', 'true');
     };
 
-    closeBtn?.addEventListener('click', closeModal);
-    understandBtn?.addEventListener('click', closeModal);
-    modal?.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (understandBtn) understandBtn.addEventListener('click', closeModal);
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 });
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// ─── State ───────────────────────────────────────────────────────────────────
 let currentLang    = 'ar';
 let currentInfo    = null;
 let es             = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT   = 3;
 
-// Cookies the user has pasted — persisted for the whole session
-let ytCookieString = sessionStorage.getItem('migo_yt_cookies') || '';
+// Stored YouTube cookies entered/extracted by the user this session
+let ytCookieString = '';
 
-// ─── DOM refs ─────────────────────────────────────────────────────────────────
+// ─── DOM references ───────────────────────────────────────────────────────────
 const urlInput          = document.getElementById('url-input');
 const fetchBtn          = document.getElementById('fetch-btn');
 const langBtn           = document.getElementById('lang-btn');
@@ -128,7 +131,7 @@ const dlQuality         = document.getElementById('download-quality');
 const dlBtn             = document.getElementById('download-btn');
 const progressContainer = document.getElementById('progress-container');
 
-// ─── Language ─────────────────────────────────────────────────────────────────
+// ─── Language toggle ──────────────────────────────────────────────────────────
 langBtn.addEventListener('click', () => {
     currentLang = currentLang === 'ar' ? 'en' : 'ar';
     applyLanguage();
@@ -139,18 +142,18 @@ function applyLanguage() {
     document.documentElement.lang = currentLang;
     document.documentElement.dir  = d.dir;
 
-    document.getElementById('title-text').innerText         = d.title;
-    document.getElementById('subtitle-text').innerText      = d.subtitle;
-    urlInput.placeholder                                     = d.placeholder;
-    document.getElementById('fetch-btn-text').innerText     = d.fetchBtn;
-    document.getElementById('loading-text').innerText       = d.loading;
-    document.getElementById('type-label').innerText         = d.typeLabel;
-    document.getElementById('opt-video').innerText          = d.optVideo;
-    document.getElementById('opt-audio').innerText          = d.optAudio;
-    document.getElementById('opt-subtitle').innerText       = d.optSubtitle;
-    document.getElementById('quality-label').innerText      = d.qualityLabel;
-    document.getElementById('download-btn-text').innerText  = d.downloadBtn;
-    document.getElementById('progress-title').innerText     = d.progressTitle;
+    document.getElementById('title-text').innerText    = d.title;
+    document.getElementById('subtitle-text').innerText = d.subtitle;
+    urlInput.placeholder = d.placeholder;
+    document.getElementById('fetch-btn-text').innerText    = d.fetchBtn;
+    document.getElementById('loading-text').innerText      = d.loading;
+    document.getElementById('type-label').innerText        = d.typeLabel;
+    document.getElementById('opt-video').innerText         = d.optVideo;
+    document.getElementById('opt-audio').innerText         = d.optAudio;
+    document.getElementById('opt-subtitle').innerText      = d.optSubtitle;
+    document.getElementById('quality-label').innerText     = d.qualityLabel;
+    document.getElementById('download-btn-text').innerText = d.downloadBtn;
+    document.getElementById('progress-title').innerText    = d.progressTitle;
     langBtn.innerText = d.langSwitch;
 
     if (currentInfo) {
@@ -159,15 +162,19 @@ function applyLanguage() {
         updateQualityDropdown();
     }
 
-    const panel = document.getElementById('yt-session-panel');
-    if (panel && !panel.classList.contains('hidden')) renderYtPanel();
+    // Re-render the YouTube panel if it is visible
+    const ytPanel = document.getElementById('yt-session-panel');
+    if (ytPanel && !ytPanel.classList.contains('hidden')) {
+        renderYtPanel();
+    }
 }
 
-// ─── YouTube URL detection ────────────────────────────────────────────────────
+// ─── URL detection helpers ────────────────────────────────────────────────────
 function isYouTube(url) {
     return /youtube\.com|youtu\.be/i.test(url);
 }
 
+// Show/hide the YT session panel whenever the URL field changes
 urlInput.addEventListener('input', () => {
     const panel = document.getElementById('yt-session-panel');
     if (!panel) return;
@@ -179,103 +186,128 @@ urlInput.addEventListener('input', () => {
     }
 });
 
-// ─── YouTube session panel ────────────────────────────────────────────────────
+// ─── Render the YouTube session panel ────────────────────────────────────────
 function renderYtPanel() {
     const d     = dict[currentLang];
     const panel = document.getElementById('yt-session-panel');
     if (!panel) return;
 
-    const stepsHtml = d.ytSteps
-        .map(s => `<li>${s}</li>`)
-        .join('');
-
     panel.innerHTML = `
-        <div class="yt-header">
-            <span class="yt-icon">▶</span>
-            <div>
-                <strong class="yt-title">${d.ytTitle}</strong>
-                <p class="yt-desc">${d.ytDesc}</p>
+        <div class="yt-banner">
+            <div class="yt-banner-icon">▶</div>
+            <div class="yt-banner-text">
+                <strong>${d.ytBannerTitle}</strong>
+                <p>${d.ytBannerBody}</p>
             </div>
         </div>
 
-        <label class="yt-label">${d.ytCookieLabel}</label>
-        <div class="yt-input-row">
-            <textarea id="yt-cookie-ta"
-                class="yt-textarea"
-                rows="3"
-                placeholder="${d.ytPlaceholder}"
-                spellcheck="false">${ytCookieString}</textarea>
-            <button id="yt-save-btn" class="neon-btn small yt-save-btn">${d.ytSaveBtn}</button>
+        <div class="yt-steps">
+            <div class="yt-step">${d.ytStep1}</div>
+            <div class="yt-step">${d.ytStep2}</div>
         </div>
-        <span id="yt-save-status" class="yt-save-status ${ytCookieString ? 'visible' : ''}">
-            ${ytCookieString ? d.ytSavedOk : ''}
-        </span>
 
-        <details class="yt-details">
-            <summary>${d.ytHowToggle}</summary>
-            <ol class="yt-steps-list">${stepsHtml}</ol>
-            <p class="yt-warning">${d.ytWarning}</p>
+        <button id="yt-extract-btn" class="neon-btn small yt-extract-btn">
+            ${d.ytExtractBtn}
+        </button>
+        <span id="yt-extract-status" class="yt-status"></span>
+
+        <div class="yt-manual-section">
+            <label class="yt-manual-label">${d.ytManualLabel}</label>
+            <div class="yt-manual-row">
+                <textarea id="yt-manual-input"
+                    class="yt-cookie-input"
+                    rows="2"
+                    placeholder="${d.ytManualPlaceholder}"
+                    spellcheck="false">${ytCookieString}</textarea>
+                <button id="yt-manual-save" class="neon-btn small">&nbsp;↵&nbsp;</button>
+            </div>
+            <span id="yt-manual-status" class="yt-status"></span>
+        </div>
+
+        <details class="yt-how-details">
+            <summary>${d.ytHowTitle}</summary>
+            <ol class="yt-how-list">
+                ${d.ytHowSteps.map(s => `<li>${s}</li>`).join('')}
+            </ol>
         </details>
     `;
 
-    document.getElementById('yt-save-btn').addEventListener('click', saveCookies);
-    document.getElementById('yt-cookie-ta').addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveCookies(); }
-    });
+    // Bind extract button
+    document.getElementById('yt-extract-btn').addEventListener('click', attemptAutoExtract);
+
+    // Bind manual save button
+    document.getElementById('yt-manual-save').addEventListener('click', saveManualCookies);
+
+    // Live-save on textarea change
+    document.getElementById('yt-manual-input').addEventListener('change', saveManualCookies);
 }
 
-function saveCookies() {
+// ─── Auto-extract: reads document.cookie (non-HttpOnly cookies only) ─────────
+// For HttpOnly cookies the user must paste manually, but this captures
+// whatever the current page context can see (helpful for cross-site embeds).
+function attemptAutoExtract() {
     const d      = dict[currentLang];
-    const ta     = document.getElementById('yt-cookie-ta');
-    const status = document.getElementById('yt-save-status');
+    const raw    = document.cookie;          // non-HttpOnly cookies on this origin
+    const status = document.getElementById('yt-extract-status');
+
+    if (raw && raw.trim().length > 0) {
+        ytCookieString = raw;
+        const ta = document.getElementById('yt-manual-input');
+        if (ta) ta.value = raw;
+        status.innerText  = d.ytExtractDone;
+        status.className  = 'yt-status success';
+    } else {
+        status.innerText  = d.ytExtractFail;
+        status.className  = 'yt-status warn';
+    }
+}
+
+// ─── Manual cookie save ───────────────────────────────────────────────────────
+function saveManualCookies() {
+    const d      = dict[currentLang];
+    const ta     = document.getElementById('yt-manual-input');
+    const status = document.getElementById('yt-manual-status');
     if (!ta) return;
     ytCookieString = ta.value.trim();
-    sessionStorage.setItem('migo_yt_cookies', ytCookieString);
-    if (status) {
-        status.innerText = ytCookieString ? d.ytSavedOk : '';
-        status.classList.toggle('visible', !!ytCookieString);
+    if (ytCookieString) {
+        status.innerText = d.ytManualSaved;
+        status.className = 'yt-status success';
     }
 }
 
 // ─── Fetch info ───────────────────────────────────────────────────────────────
-urlInput.addEventListener('keypress', e => { if (e.key === 'Enter') fetchInfo(); });
+urlInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') fetchInfo(); });
 fetchBtn.addEventListener('click', fetchInfo);
 
 async function fetchInfo() {
     const url = urlInput.value.trim();
     if (!url) { showError(dict[currentLang].errEmpty); return; }
 
-    // Grab latest textarea value before fetching
-    const ta = document.getElementById('yt-cookie-ta');
-    if (ta && ta.value.trim()) ytCookieString = ta.value.trim();
-
     urlInput.disabled = true;
     fetchBtn.disabled = true;
+
     hideError();
     mediaInfo.classList.add('hidden');
     progressContainer.classList.add('hidden');
     loadingSpinner.classList.remove('hidden');
 
     try {
-        const payload = { url };
-        if (isYouTube(url) && ytCookieString) payload.cookies = ytCookieString;
-
         const res  = await fetch('/api/info', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ url })
         });
         const data = await res.json();
         if (!res.ok) {
             let msg = data.detail || 'Failed to fetch data';
-            if (Array.isArray(msg))           msg = msg.map(e => e.msg || JSON.stringify(e)).join(', ');
-            else if (typeof msg !== 'string') msg = JSON.stringify(msg);
+            if (Array.isArray(msg))            msg = msg.map(e => e.msg || JSON.stringify(e)).join(', ');
+            else if (typeof msg !== 'string')   msg = JSON.stringify(msg);
             throw new Error(msg);
         }
         currentInfo = data;
         populateInfo();
     } catch (err) {
-        showError(dict[currentLang].errFetch + ': ' + err.message);
+        showError(dict[currentLang].errFetch + ": " + err.message);
     } finally {
         loadingSpinner.classList.add('hidden');
         urlInput.disabled = false;
@@ -284,12 +316,11 @@ async function fetchInfo() {
 }
 
 function populateInfo() {
-    document.getElementById('media-title').innerText =
-        currentInfo.title;
-    document.getElementById('media-type').innerText =
-        currentInfo.type === 'playlist'
-            ? dict[currentLang].playlist
-            : dict[currentLang].video;
+    document.getElementById('media-title').innerText = currentInfo.title;
+    const typeBadge = document.getElementById('media-type');
+    typeBadge.innerText = currentInfo.type === 'playlist'
+        ? dict[currentLang].playlist
+        : dict[currentLang].video;
 
     const thumb = document.getElementById('media-thumb');
     if (currentInfo.thumbnail) {
@@ -309,18 +340,20 @@ dlType.addEventListener('change', updateQualityDropdown);
 function updateQualityDropdown() {
     dlQuality.innerHTML = '';
     const type = dlType.value;
-    let options =
-        type === 'video'    ? currentInfo.qualities :
-        type === 'audio'    ? (currentInfo.audio_options?.length ? currentInfo.audio_options : ['best']) :
-        type === 'subtitle' ? currentInfo.subtitles : [];
+    let options = [];
 
-    if (!options || !options.length) {
+    if (type === 'video')         options = currentInfo.qualities;
+    else if (type === 'audio')  { options = currentInfo.audio_options; if (!options || !options.length) options = ['best']; }
+    else if (type === 'subtitle') options = currentInfo.subtitles;
+
+    if (!options || options.length === 0) {
         const opt = document.createElement('option');
         opt.value = ''; opt.innerText = dict[currentLang].notAvailable;
         dlQuality.appendChild(opt);
         dlBtn.disabled = true;
         return;
     }
+
     dlBtn.disabled = false;
     options.forEach(val => {
         const opt = document.createElement('option');
@@ -332,17 +365,17 @@ function updateQualityDropdown() {
 function showError(msg) { errorMsg.innerText = msg; errorMsg.classList.remove('hidden'); }
 function hideError()    { errorMsg.classList.add('hidden'); }
 
-// ─── Download ─────────────────────────────────────────────────────────────────
+// ─── Start download ───────────────────────────────────────────────────────────
 dlBtn.addEventListener('click', async () => {
     const url     = urlInput.value.trim();
     const type    = dlType.value;
-    const quality = type === 'subtitle' ? ''              : dlQuality.value;
-    const lang    = type === 'subtitle' ? dlQuality.value : '';
+    const quality = type === 'subtitle' ? "" : dlQuality.value;
+    const lang    = type === 'subtitle' ? dlQuality.value : "";
     if (!url) return;
 
-    // Final grab of textarea before sending
-    const ta = document.getElementById('yt-cookie-ta');
-    if (ta && ta.value.trim()) ytCookieString = ta.value.trim();
+    // Read any saved manual cookies from the textarea (latest value)
+    const taManual = document.getElementById('yt-manual-input');
+    if (taManual && taManual.value.trim()) ytCookieString = taManual.value.trim();
 
     hideError();
     dlBtn.disabled     = true;
@@ -353,7 +386,11 @@ dlBtn.addEventListener('click', async () => {
 
     try {
         const payload = { url, type, quality, lang };
-        if (isYouTube(url) && ytCookieString) payload.cookies = ytCookieString;
+
+        // Attach cookies only for YouTube URLs
+        if (isYouTube(url) && ytCookieString) {
+            payload.cookies = ytCookieString;
+        }
 
         const res  = await fetch('/api/download', {
             method: 'POST',
@@ -363,10 +400,11 @@ dlBtn.addEventListener('click', async () => {
         const data = await res.json();
         if (!res.ok) {
             let msg = data.detail || 'Failed to start download';
-            if (Array.isArray(msg))           msg = msg.map(e => e.msg || JSON.stringify(e)).join(', ');
-            else if (typeof msg !== 'string') msg = JSON.stringify(msg);
+            if (Array.isArray(msg))            msg = msg.map(e => e.msg || JSON.stringify(e)).join(', ');
+            else if (typeof msg !== 'string')   msg = JSON.stringify(msg);
             throw new Error(msg);
         }
+
         reconnectAttempts = 0;
         startProgressStream(data.task_id);
     } catch (err) {
@@ -383,7 +421,7 @@ function enableInputs() {
     document.getElementById('download-btn-text').innerText = dict[currentLang].downloadBtn;
 }
 
-// ─── SSE progress ─────────────────────────────────────────────────────────────
+// ─── SSE progress stream ──────────────────────────────────────────────────────
 function startProgressStream(taskId) {
     if (reconnectAttempts === 0) {
         document.getElementById('progress-bar-fill').style.width = '0%';
@@ -392,10 +430,11 @@ function startProgressStream(taskId) {
         document.getElementById('stat-eta').innerText      = '0s';
         document.getElementById('progress-filename').innerText = '';
     }
+
     if (es) es.close();
     es = new EventSource(`/api/progress/${taskId}`);
 
-    es.onmessage = event => {
+    es.onmessage = (event) => {
         reconnectAttempts = 0;
         const data = JSON.parse(event.data);
 
@@ -403,10 +442,11 @@ function startProgressStream(taskId) {
             progressContainer.classList.remove('hidden');
             document.getElementById('progress-bar-fill').style.width = data.percent;
             document.getElementById('stat-percent').innerText  = data.percent;
-            document.getElementById('stat-speed').innerText    = data.speed    || '0 KiB/s';
-            document.getElementById('stat-eta').innerText      = data.eta      || '0s';
+            document.getElementById('stat-speed').innerText    = data.speed   || '0 KiB/s';
+            document.getElementById('stat-eta').innerText      = data.eta     || '0s';
             document.getElementById('progress-filename').innerText = data.filename || '';
         }
+
         if (data.status === 'completed') {
             es.close();
             document.getElementById('progress-bar-fill').style.width = '100%';
@@ -415,6 +455,7 @@ function startProgressStream(taskId) {
             window.location.href = `/api/download_file/${taskId}`;
             setTimeout(enableInputs, 2000);
         }
+
         if (data.status === 'error') {
             es.close();
             showError(dict[currentLang].dlError + data.error);
@@ -434,7 +475,7 @@ function startProgressStream(taskId) {
     };
 }
 
-// ─── Initial language ─────────────────────────────────────────────────────────
+// ─── Initial language detection ───────────────────────────────────────────────
 const browserLang = navigator.language || navigator.userLanguage;
 if (!browserLang.startsWith('ar')) currentLang = 'en';
 applyLanguage();

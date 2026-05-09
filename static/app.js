@@ -97,6 +97,22 @@ const dlQuality = document.getElementById('download-quality');
 const dlBtn = document.getElementById('download-btn');
 const progressContainer = document.getElementById('progress-container');
 
+// دالة مساعدة لجلب توكنات يوتيوب من المتصفح (CSIR)
+async function getYouTubeTokens(url) {
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        try {
+            // محاكاة استدعاء الوظيفة التي تستخرج التوكنات عبر المتصفح
+            // ملاحظة: تعتمد هذه الدالة على وجود مكتبة توليد التوكنات في الـ HTML الخاص بك
+            if (window.YouTubeIdentityGenerator) {
+                return await window.YouTubeIdentityGenerator.generate();
+            }
+        } catch (e) {
+            console.warn("Failed to generate YouTube tokens client-side:", e);
+        }
+    }
+    return { po_token: null, visitor_data: null };
+}
+
 langBtn.addEventListener('click', () => {
     currentLang = currentLang === 'ar' ? 'en' : 'ar';
     applyLanguage();
@@ -142,7 +158,6 @@ async function fetchInfo() {
         return;
     }
     
-    // Disable inputs to prevent multiple fetches
     urlInput.disabled = true;
     fetchBtn.disabled = true;
     
@@ -152,10 +167,17 @@ async function fetchInfo() {
     loadingSpinner.classList.remove('hidden');
     
     try {
+        // جلب التوكنات قبل إرسال طلب المعلومات لضمان فك الحظر
+        const tokens = await getYouTubeTokens(url);
+
         const res = await fetch('/api/info', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ url })
+            body: JSON.stringify({ 
+                url,
+                po_token: tokens.po_token,
+                visitor_data: tokens.visitor_data
+            })
         });
         
         const data = await res.json();
@@ -259,10 +281,20 @@ dlBtn.addEventListener('click', async () => {
     document.getElementById('download-btn-text').innerText = dict[currentLang].preparing;
     
     try {
+        // جلب التوكنات مجدداً لضمان صلاحيتها وقت التحميل الفعلي
+        const tokens = await getYouTubeTokens(url);
+
         const res = await fetch('/api/download', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ url, type, quality, lang })
+            body: JSON.stringify({ 
+                url, 
+                type, 
+                quality, 
+                lang,
+                po_token: tokens.po_token,
+                visitor_data: tokens.visitor_data
+            })
         });
         
         const data = await res.json();
@@ -293,8 +325,6 @@ function enableInputs() {
 }
 
 function startProgressStream(taskId) {
-    // progressContainer.classList.remove('hidden');
-    
     if (reconnectAttempts === 0) {
         document.getElementById('progress-bar-fill').style.width = '0%';
         document.getElementById('stat-percent').innerText = '0%';
@@ -310,7 +340,7 @@ function startProgressStream(taskId) {
     es = new EventSource(`/api/progress/${taskId}`);
     
     es.onmessage = (event) => {
-        reconnectAttempts = 0; // Reset on success
+        reconnectAttempts = 0;
         const data = JSON.parse(event.data);
         
         if (data.status === 'downloading' || data.status === 'processing') {

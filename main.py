@@ -9,17 +9,27 @@ import asyncio
 import time
 import shutil
 import json
+import static_ffmpeg # استيراد المكتبة للتهيئة المبكرة
 from sse_starlette.sse import EventSourceResponse
 
 from backend.downloader import get_media_info, download_media_task, progress_store, DOWNLOADS_DIR
 from database import init_db
 
-# إنشاء الجدول عند بداية تشغيل السيرفر
+# --- منطقة تهيئة السيرفر عند البدء (Startup Logic) ---
+# 1. تهيئة قاعدة البيانات
 try:
     init_db()
     print("✅ تم ربط قاعدة بيانات PostgreSQL بنجاح")
 except Exception as e:
     print(f"❌ فشل الاتصال بقاعدة البيانات: {e}")
+
+# 2. تهيئة FFmpeg مسبقاً لمنع التأخير أثناء الطلبات (حل مشكلة 400 Bad Request)
+try:
+    static_ffmpeg.add_paths()
+    print("✅ تم تجهيز مسارات FFmpeg بنجاح")
+except Exception as e:
+    print(f"❌ فشل تجهيز FFmpeg: {e}")
+# --------------------------------------------------
 
 app = FastAPI()
 
@@ -27,7 +37,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class URLRequest(BaseModel):
     url: str
-    # إضافة حقول التوكنات لاستقبالها من المتصفح
+    # استقبال التوكنات من المتصفح (CSIR)
     po_token: Optional[str] = None
     visitor_data: Optional[str] = None
 
@@ -36,7 +46,7 @@ class DownloadRequest(BaseModel):
     type: str 
     quality: Optional[str] = None
     lang: Optional[str] = None
-    # إضافة حقول التوكنات لاستقبالها من المتصفح
+    # استقبال التوكنات من المتصفح (CSIR)
     po_token: Optional[str] = None
     visitor_data: Optional[str] = None
 
@@ -51,7 +61,6 @@ def cleanup_old_files():
         free_gb = free / (2**30)
         critical_space = free_gb < 0.3  
         
-        files_info = []
         for root, dirs, files in os.walk(DOWNLOADS_DIR, topdown=False):
             for name in files:
                 fpath = os.path.join(root, name)
@@ -74,7 +83,7 @@ def cleanup_old_files():
 
 @app.post("/api/info")
 def get_info(req: URLRequest):
-    # تمرير التوكنات إلى دالة جلب المعلومات
+    # تمرير التوكنات لفك حظر يوتيوب في مرحلة جلب البيانات
     info = get_media_info(req.url, po_token=req.po_token, visitor_data=req.visitor_data)
     if "error" in info:
         raise HTTPException(status_code=400, detail=info["error"])
@@ -84,7 +93,7 @@ def get_info(req: URLRequest):
 def start_download(req: DownloadRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(cleanup_old_files)
     task_id = str(uuid.uuid4())
-    # تمرير التوكنات إلى دالة مهمة التحميل
+    # تمرير التوكنات لفك حظر يوتيوب في مرحلة التحميل الفعلي
     download_media_task(
         task_id, 
         req.url, 

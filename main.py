@@ -37,7 +37,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class URLRequest(BaseModel):
     url: str
-    # استقبال التوكنات من المتصفح (CSIR)
+    # استقبال التوكنات من المتصفح (Client-Side Identity Relay)
     po_token: Optional[str] = None
     visitor_data: Optional[str] = None
 
@@ -46,7 +46,7 @@ class DownloadRequest(BaseModel):
     type: str 
     quality: Optional[str] = None
     lang: Optional[str] = None
-    # استقبال التوكنات من المتصفح (CSIR)
+    # استقبال التوكنات من المتصفح (Client-Side Identity Relay)
     po_token: Optional[str] = None
     visitor_data: Optional[str] = None
 
@@ -83,7 +83,7 @@ def cleanup_old_files():
 
 @app.post("/api/info")
 def get_info(req: URLRequest):
-    # تمرير التوكنات لفك حظر يوتيوب في مرحلة جلب البيانات
+    # تمرير التوكنات المقتبسة من IP المستخدم لفك حظر يوتيوب في مرحلة جلب البيانات
     info = get_media_info(req.url, po_token=req.po_token, visitor_data=req.visitor_data)
     if "error" in info:
         raise HTTPException(status_code=400, detail=info["error"])
@@ -93,7 +93,7 @@ def get_info(req: URLRequest):
 def start_download(req: DownloadRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(cleanup_old_files)
     task_id = str(uuid.uuid4())
-    # تمرير التوكنات لفك حظر يوتيوب في مرحلة التحميل الفعلي
+    # تمرير الهوية المعتمدة (CSIR) لفك حظر يوتيوب في مرحلة التحميل الفعلي
     download_media_task(
         task_id, 
         req.url, 

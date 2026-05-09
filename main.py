@@ -27,12 +27,18 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class URLRequest(BaseModel):
     url: str
+    # إضافة حقول التوكنات لاستقبالها من المتصفح
+    po_token: Optional[str] = None
+    visitor_data: Optional[str] = None
 
 class DownloadRequest(BaseModel):
     url: str
     type: str 
     quality: Optional[str] = None
     lang: Optional[str] = None
+    # إضافة حقول التوكنات لاستقبالها من المتصفح
+    po_token: Optional[str] = None
+    visitor_data: Optional[str] = None
 
 @app.get("/")
 def read_root():
@@ -68,7 +74,8 @@ def cleanup_old_files():
 
 @app.post("/api/info")
 def get_info(req: URLRequest):
-    info = get_media_info(req.url)
+    # تمرير التوكنات إلى دالة جلب المعلومات
+    info = get_media_info(req.url, po_token=req.po_token, visitor_data=req.visitor_data)
     if "error" in info:
         raise HTTPException(status_code=400, detail=info["error"])
     return info
@@ -77,7 +84,16 @@ def get_info(req: URLRequest):
 def start_download(req: DownloadRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(cleanup_old_files)
     task_id = str(uuid.uuid4())
-    download_media_task(task_id, req.url, req.type, req.quality, req.lang)
+    # تمرير التوكنات إلى دالة مهمة التحميل
+    download_media_task(
+        task_id, 
+        req.url, 
+        req.type, 
+        req.quality, 
+        req.lang, 
+        po_token=req.po_token, 
+        visitor_data=req.visitor_data
+    )
     return {"task_id": task_id}
 
 @app.get("/api/progress/{task_id}")

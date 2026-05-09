@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiGo</title>
-    
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+
+    <!-- ─── Welcome modal ──────────────────────────────────────────────────── -->
     <div id="welcome-modal" class="modal-overlay hidden">
         <div class="modal-content neon-border">
             <button id="close-modal" class="close-btn">&times;</button>
             <h2 class="glow-text" style="margin-bottom: 15px; font-size: 1.8em;">مرحباً بك في MiGo! 🚀</h2>
             <p style="font-size: 1.1em; margin-bottom: 15px;">حمل الفيديوهات والصوتيات بأعلى جودة من أكثر من 1000 منصة، بما في ذلك:</p>
-            
+
             <ul class="platforms-list">
                 <li>📱 فيسبوك</li>
                 <li>🎵 تيك توك</li>
@@ -25,32 +26,48 @@
             </ul>
 
             <div class="alert-box">
-                <strong>⚠️ تنبيه هام (يوتيوب)</strong>
-                <p>نعتذر بشدة، خدمة التحميل من <b>يوتيوب</b> متوقفة مؤقتاً بسبب إجراء تحديثات قوية على الخوادم الخاصة بنا لتجاوز الحظر الجديد. نعدكم بعودتها في التحديث القادم قريباً جداً!</p>
+                <strong>⚠️ تنبيه (يوتيوب)</strong>
+                <p>
+                    تحميل يوتيوب يتطلب مشاركة جلستك من المتصفح.
+                    بعد لصق الرابط ستظهر لك أداة بسيطة تشرح كيف تفعل ذلك.
+                    لا يُرسَل أي كلمة مرور — فقط بيانات الجلسة.
+                </p>
             </div>
 
             <button id="understand-btn" class="neon-btn primary" style="width: 100%; margin-top: 10px;">حسناً، فهمت</button>
         </div>
     </div>
 
+    <!-- ─── Language toggle ─────────────────────────────────────────────────── -->
     <div class="lang-toggle-container">
         <button id="lang-btn" class="neon-btn small">English</button>
     </div>
 
+    <!-- ─── Main container ──────────────────────────────────────────────────── -->
     <div class="container">
-        <h1 class="glow-text" id="title-text">محمل الوسائط المتقدم</h1>
+        <h1 class="glow-text" id="title-text">MiGo</h1>
         <p class="subtitle" id="subtitle-text">حمل الفيديوهات، الصوتيات، والترجمات من جميع المنصات</p>
 
+        <!-- URL input -->
         <div class="input-group">
-            <input type="text" id="url-input" placeholder="ضع رابط الفيديو أو قائمة التشغيل هنا واضغط Enter..." autocomplete="off">
-            <button id="fetch-btn" class="neon-btn"><span id="fetch-btn-text">جلب البيانات</span></button>
+            <input type="text" id="url-input"
+                placeholder="ضع رابط الفيديو أو قائمة التشغيل هنا واضغط Enter..."
+                autocomplete="off">
+            <button id="fetch-btn" class="neon-btn">
+                <span id="fetch-btn-text">جلب البيانات</span>
+            </button>
         </div>
 
+        <!-- YouTube session panel — rendered by JS, shown only for YT URLs -->
+        <div id="yt-session-panel" class="hidden card neon-border yt-panel"></div>
+
+        <!-- Loading spinner -->
         <div id="loading-spinner" class="hidden">
             <div class="spinner"></div>
             <p id="loading-text">جاري جلب البيانات...</p>
         </div>
 
+        <!-- Media info card -->
         <div id="media-info" class="hidden card neon-border">
             <div class="media-header">
                 <img id="media-thumb" src="" alt="Thumbnail" class="hidden">
@@ -64,16 +81,14 @@
                 <div class="select-wrapper">
                     <label id="type-label">نوع التحميل</label>
                     <select id="download-type">
-                        <option value="video" id="opt-video">فيديو (صوت وصورة)</option>
-                        <option value="audio" id="opt-audio">صوت فقط</option>
+                        <option value="video"    id="opt-video">فيديو (صوت وصورة)</option>
+                        <option value="audio"    id="opt-audio">صوت فقط</option>
                         <option value="subtitle" id="opt-subtitle">ترجمة</option>
                     </select>
                 </div>
-
                 <div class="select-wrapper" id="quality-wrapper">
                     <label id="quality-label">الجودة / اللغة</label>
-                    <select id="download-quality">
-                        </select>
+                    <select id="download-quality"></select>
                 </div>
             </div>
 
@@ -82,26 +97,24 @@
             </button>
         </div>
 
+        <!-- Progress card -->
         <div id="progress-container" class="hidden card neon-border">
             <h4 id="progress-title">حالة التحميل</h4>
             <p id="progress-filename" class="filename"></p>
-            
             <div class="progress-bar-bg">
                 <div id="progress-bar-fill" class="progress-bar-fill"></div>
             </div>
-            
             <div class="progress-stats">
                 <span id="stat-percent">0%</span>
                 <span id="stat-speed">0 KiB/s</span>
                 <span id="stat-eta">0s</span>
             </div>
         </div>
-        
+
+        <!-- Error message -->
         <div id="error-message" class="hidden error-card"></div>
     </div>
 
-    <script src="/static/yt-identity.js"></script>
     <script src="/static/app.js"></script>
-
 </body>
 </html>

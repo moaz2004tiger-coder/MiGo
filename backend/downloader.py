@@ -30,19 +30,23 @@ def sanitize_filename(filename: str) -> str:
     # Allow Arabic, English letters, numbers, spaces, dots, and dashes.
     return re.sub(r'[^\w\-\.\s\u0600-\u06FF]', '_', filename).strip()
 
-# دالة جلب المعلومات تعتمد الآن كلياً على CSIR
+# --- تعديل دالة جلب المعلومات لحقن توكنات الهوية ---
 def get_media_info(url: str, po_token: str = None, visitor_data: str = None):
-    # نترك yt-dlp يستخدم الـ User-Agent الافتراضي والـ player_client الافتراضي
+    static_ffmpeg.add_paths()
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'extract_flat': 'in_playlist',
         'logger': MyLogger(),
         'ffmpeg_location': shutil.which('ffmpeg'),
-        # تم إلغاء الكوكيز اليدوية بناءً على طلبك
+        'cookiefile': 'cookies.txt',
+        'player_client': ['android', 'web_safari'],
+        'user_agent': 'Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36',
         'extractor_args': {
             'youtube': {
-                # الاعتماد الحصري على التوكنات الممررة من جهة العميل
+                'player_client': ['android', 'web_safari'],
+                'formats': 'duplicate,missing_pot',
+                # حقن التوكنات المقتبسة من IP المستخدم (CSIR)
                 'po_token': [po_token] if po_token else [],
                 'visitor_data': [visitor_data] if visitor_data else []
             }
@@ -57,94 +61,135 @@ def get_media_info(url: str, po_token: str = None, visitor_data: str = None):
                 playlist_title = info.get('title', 'Playlist')
                 videos = []
                 for idx, entry in enumerate(info['entries']):
-                    if entry:
-                        videos.append({
-                            'title': entry.get('title', f'Video {idx+1}'),
-                            'url': entry.get('url'),
-                            'id': entry.get('id')
-                        })
+                    videos.append({
+                        'title': entry.get('title', f'Video {idx+1}'),
+                        'url': entry.get('url'),
+                        'id': entry.get('id')
+                    })
                 return {
                     'type': 'playlist',
                     'title': playlist_title,
                     'videos': videos,
-                    'qualities': ['360p', '480p', '720p', '1080p'],
+                    'qualities': ['144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p'],
                     'audio_options': ['best'],
                     'subtitles': []
                 }
             else:
                 # Single video logic
+                title = info.get('title', 'Video')
+                thumbnail = info.get('thumbnail')
                 formats = info.get('formats', [])
-                video_heights = sorted(list(set(int(f.get('height')) for f in formats if f.get('height'))))
+                video_heights = set()
+                for f in formats:
+                    h = f.get('height')
+                    if f.get('vcodec') != 'none' and h:
+                        video_heights.add(int(h))
+                
+                video_qualities = [f"{h}p" for h in sorted(list(video_heights))]
+                if not video_qualities: video_qualities = ['best']
+                
+                sub_dict = info.get('subtitles', {})
+                auto_sub_dict = info.get('automatic_captions', {})
+                all_subs = set(list(sub_dict.keys()) + list(auto_sub_dict.keys()))
                 
                 return {
                     'type': 'video',
-                    'title': info.get('title', 'Video'),
-                    'thumbnail': info.get('thumbnail'),
-                    'qualities': [f"{h}p" for h in video_heights] if video_heights else ['best'],
+                    'title': title,
+                    'thumbnail': thumbnail,
+                    'qualities': video_qualities,
                     'audio_options': ['best'],
-                    'subtitles': sorted(list(set(info.get('subtitles', {}).keys())))
+                    'subtitles': sorted(list(all_subs))
                 }
         except Exception as e:
-            print(f"❌ CSIR Fetch Error: {str(e)}")
-            return {"error": "خطأ في جلب البيانات، يرجى المحاولة لاحقاً"}
+            err_msg = str(e).lower()
+            friendly_err = "خطأ في الاتصال بيوتيوب (نرجو التحقق من التوكنات)"
+            if "private video" in err_msg: friendly_err = "هذا الفيديو خاص"
+            elif "unsupported url" in err_msg: friendly_err = "الرابط غير مدعوم"
+            return {"error": friendly_err}
 
-# دالة التحميل مع تحسين الـ Cleanup والالتزام بـ CSIR
+# --- تعديل دالة التحميل لتفعيل "الجلسة الممتدة" ---
 def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang: str = None, po_token: str = None, visitor_data: str = None):
     output_dir = os.path.join(DOWNLOADS_DIR, task_id)
     os.makedirs(output_dir, exist_ok=True)
     
     def hook_wrapper(d):
         if d['status'] == 'downloading':
-            percent_str = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', d.get('_percent_str', '0%'))
+            percent_str = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', d.get('_percent_str', '0.0%')).strip()
             progress_store[task_id] = {
                 "status": "downloading",
-                "percent": percent_str.strip(),
+                "percent": percent_str,
                 "speed": d.get('_speed_str', '0KiB/s').strip(),
                 "eta": d.get('_eta_str', 'Unknown').strip(),
                 "filename": os.path.basename(d.get('filename', ''))
             }
         elif d['status'] == 'finished':
-            progress_store[task_id] = {"status": "processing", "percent": "100%", "filename": "Finalizing..."}
-
-    # Format Selector مرن لضمان التحميل في حال عدم توفر جودة معينة
-    if dl_type == 'video':
-        h = quality.replace('p', '') if quality != 'best' else '1080'
-        format_str = f'bestvideo[height<={h}][ext=mp4]+bestaudio[ext=m4a]/best[height<={h}]/best'
-    elif dl_type == 'audio':
-        format_str = 'bestaudio/best'
-    else:
-        format_str = 'best'
+            progress_store[task_id] = {"status": "processing", "percent": "100%", "filename": "Merging/Finalizing..."}
 
     ydl_opts = {
         'outtmpl': os.path.join(output_dir, '%(title).100s.%(ext)s'),
-        'format': format_str,
+        'cookiefile': 'cookies.txt',
         'logger': MyLogger(),
         'progress_hooks': [hook_wrapper],
-        'ffmpeg_location': shutil.which('ffmpeg'),
+        'quiet': False,
+        'windowsfilenames': True,
+        'player_client': ['android', 'web_safari'],
+        'user_agent': 'Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36',
         'extractor_args': {
             'youtube': {
+                'player_client': ['android', 'web_safari'],
+                'formats': 'duplicate,missing_pot',
+                # حقن معاملات الهوية الممررة من المتصفح لفك الحظر
                 'po_token': [po_token] if po_token else [],
                 'visitor_data': [visitor_data] if visitor_data else []
             }
         }
     }
+    
+    # ضبط FFmpeg
+    local_ffmpeg = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if platform.system() == "Windows" and os.path.exists(os.path.join(local_ffmpeg, "ffmpeg.exe")):
+        ydl_opts['ffmpeg_location'] = local_ffmpeg
+    elif platform.system() != "Windows" and os.path.exists(os.path.join(local_ffmpeg, "ffmpeg")):
+        ydl_opts['ffmpeg_location'] = local_ffmpeg
 
-    if dl_type == 'audio':
+    # ضبط التنسيق والجودة
+    if dl_type == 'video':
+        height = quality.replace('p', '') if quality != 'best' else '1080'
+        ydl_opts['format'] = f'bestvideo[height<={height}]+bestaudio/best[height<={height}]/best'
+        ydl_opts['merge_output_format'] = 'mp4'
+    elif dl_type == 'audio':
+        ydl_opts['format'] = 'bestaudio/best'
         ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}]
+    elif dl_type == 'subtitle':
+        ydl_opts.update({'skip_download': True, 'writesubtitles': True, 'writeautomaticsub': True, 'subtitleslangs': [lang] if lang else ['en']})
+
+    is_playlist = False
+    try:
+        # ملاحظة: حقن التوكنات هنا أيضاً لضمان فحص قائمة التشغيل بنجاح
+        with yt_dlp.YoutubeDL({'quiet': True, 'extract_flat': 'in_playlist', 'extractor_args': ydl_opts['extractor_args']}) as ydl_check:
+            info_check = ydl_check.extract_info(url, download=False)
+            if info_check and 'entries' in info_check:
+                is_playlist = True
+                ydl_opts['outtmpl'] = os.path.join(output_dir, '%(playlist_index)s - %(title)s.%(ext)s')
+    except:
+        pass
 
     def run_download():
-        video_title = "Unknown"
+        progress_store[task_id] = {"status": "starting", "percent": "0%", "speed": "", "eta": "", "filename": ""}
+        video_title = "Unknown Title"
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info_data = ydl.extract_info(url, download=True)
+                info_data = ydl.extract_info(url, download=False)
                 video_title = info_data.get('title', 'Unknown Title')
+                ydl.download([url])
                 
             files = os.listdir(output_dir)
             if not files:
-                raise Exception("No files generated")
+                progress_store[task_id] = {"status": "error", "error": "لم يتم تحميل أي ملفات."}
+                log_download("Railway_Server", task_id, url, video_title, dl_type, quality, False, "No files downloaded")
+                return
 
-            # منطق ضغط الملفات أو نقلها
-            if len(files) > 1 or "playlist" in url.lower():
+            if len(files) > 1 or is_playlist:
                 zip_filename = f"playlist_{task_id[:8]}.zip"
                 zip_path = os.path.join(DOWNLOADS_DIR, zip_filename)
                 with zipfile.ZipFile(zip_path, 'w') as zipf:
@@ -153,19 +198,18 @@ def download_media_task(task_id: str, url: str, dl_type: str, quality: str, lang
                             zipf.write(os.path.join(root, file), sanitize_filename(file))
                 progress_store[task_id] = {"status": "completed", "file_path": zip_path, "filename": zip_filename}
             else:
-                final_name = f"{task_id[:8]}_{sanitize_filename(files[0])}"
+                original_file = files[0]
+                final_name = f"{task_id[:8]}_{sanitize_filename(original_file)}"
                 final_path = os.path.join(DOWNLOADS_DIR, final_name)
-                os.rename(os.path.join(output_dir, files[0]), final_path)
-                progress_store[task_id] = {"status": "completed", "file_path": final_path, "filename": files[0]}
+                os.rename(os.path.join(output_dir, original_file), final_path)
+                progress_store[task_id] = {"status": "completed", "file_path": final_path, "filename": original_file}
                 
-            log_download("Railway", task_id, url, video_title, dl_type, quality, True)
+            log_download("Railway_Server", task_id, url, video_title, dl_type, quality, True)
+            shutil.rmtree(output_dir, ignore_errors=True)
             
         except Exception as e:
-            print(f"❌ CSIR Download Failed: {str(e)}")
-            log_download("Railway", task_id, url, video_title, dl_type, quality, False, str(e))
+            log_download("Railway_Server", task_id, url, video_title, dl_type, quality, False, str(e))
             progress_store[task_id] = {"status": "error", "error": str(e)}
-        finally:
-            # نظام Cleanup محسن يضمن مسح المجلدات المؤقتة دائماً
             shutil.rmtree(output_dir, ignore_errors=True)
 
     executor.submit(run_download)
